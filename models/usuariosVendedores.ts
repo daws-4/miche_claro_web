@@ -50,19 +50,32 @@ export const DatosPagoMovilSchema = new Schema({
 
 const usuariosVendedoresSchema = new Schema(
   {
-    nombre: {
+    email:{
       type: String,
       required: true,
+      unique: true,
+      trim: true,
+    },
+    password:{
+      type: String,
+      required: true,
+      trim: true,
+    },
+    nombre: {
+      type: String,
+      trim: true,
     },
     direccion: {
       type: String,
-      required: true,
+      trim: true,
     },
     telefono1: {
       type: String,
+      trim: true,
     },
     telefono2: {
       type: String,
+      trim: true,
     },
     datosPagoMovil: DatosPagoMovilSchema,
     datosBancolombia: DatosBancolombiaSchema,
@@ -72,6 +85,7 @@ const usuariosVendedoresSchema = new Schema(
     pagos: [PagosSchema],
     activo: {
       type: Boolean,
+      default: false,
     },
   },
   {
