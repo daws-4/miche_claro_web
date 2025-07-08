@@ -1,19 +1,19 @@
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: "Next.js + HeroUI",
-  description: "Make beautiful websites regardless of your design experience.",
+  name: "Miche Claro",
+  description: "La mejor alternativa para comprar y vender alcohol online en Venezuela.",
   navItems: [
     {
-      label: "Home",
-      href: "/",
+      label: "Inicio",
+      href: "/home",
     },
     {
-      label: "Docs",
-      href: "/docs",
+      label: "Registrate",
+      href: "/register",
     },
     {
-      label: "Pricing",
+      label: "Nuestro Precios",
       href: "/pricing",
     },
     {
@@ -21,8 +21,16 @@ export const siteConfig = {
       href: "/blog",
     },
     {
-      label: "About",
+      label: "Sobre Nosotros",
       href: "/about",
+    },
+    {
+      label: "Contacto",
+      href: "/contact",
+    },
+    {
+      label: "Inicia Sesión",
+      href: "/login",
     },
   ],
   navMenuItems: [

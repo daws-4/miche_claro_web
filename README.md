@@ -140,7 +140,32 @@ La interfaz Mobile Delivery debe contar con las siguientes funciones principales
 Estas funciones aseguran una gestión eficiente, segura y transparente de las entregas y las comisiones para los usuarios delivery.
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 [VERSION2.0]
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Proyecto: Plataforma Multiplataforma de Gestión de Pedidos y Entregas
 

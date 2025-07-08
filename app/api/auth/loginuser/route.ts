@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { sign } from "jsonwebtoken";
 import { cookies } from "next/headers";
 import { connectDB } from "@/lib/db";
-import administradores from "@/models/administradores";
+import usuariosVendedores from "@/models/usuariosVendedores";
 import bcrypt from "bcryptjs";
 
 const SECRET_KEY = process.env.SECRET_KEY || "your-secret-key";
@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   await connectDB(); // Ensure the database connection is established
   const data = await request.json();
   console.log(data);
-  const admins = await administradores.findOne({ username: data.username });
+  const admins = await usuariosVendedores.findOne({ email: data.email });
   console.log(admins);
   if (!admins) {
     return NextResponse.json(
@@ -34,13 +34,11 @@ const comparePassword= await bcrypt.compare(data.password, admins.password)
     );
   }
   // **Replace with your actual authentication logic (e.g., database check)**
-  if (data.username === admins.username && comparePassword) {
+  if (data.username === admins.email && comparePassword) {
     // Create JWT token
     const token = sign(
       {
-        username: admins.username,
-        rol: admins.rol,
-        ubicacion: admins.ubicacion,
+        username: admins.nombre,
       },
       SECRET_KEY
     );

@@ -19,6 +19,11 @@ const administradores = new Schema(
       required: true,
       trim: true,
     },
+    ubicacion: {
+      type: String,
+      required: true,
+      trim: true,
+    },
   },
   {
     timestamps: true,

@@ -3,25 +3,32 @@ import { Schema, model, models } from "mongoose";
 export const PagosSchema = new Schema({
   mes: {
     type: String,
+    required: true,
   },
   fecha_de_facturacion: {
     type: String,
+    required: true,
   },
   monto_a_pagar: {
     type: Number,
+    required: true,
   },
   fecha_de_cancelacion: {
     type: String,
+    required: true,
   },
   divisa_cancelada: {
     type: String,
+    required: true,
   },
   monto_cancelado: {
     type: Number,
+    required: true,
   },
-  cambio_divisa:{
+  cambio_divisa: {
     type: String,
-  }
+    required: true,
+  },
 });
 
 export const DatosBancolombiaSchema = new Schema({
@@ -39,12 +46,15 @@ export const DatosBancolombiaSchema = new Schema({
 export const DatosPagoMovilSchema = new Schema({
   cedula_rif: {
     type: Number,
+    required: true,
   },
   telefono: {
     type: Number,
+    required: true,
   },
   banco: {
     type: String,
+    required: true,
   },
 });
 
