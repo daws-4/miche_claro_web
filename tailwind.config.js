@@ -27,6 +27,15 @@ const config = {
         accentwarning: "#FFB74D",
         successtext: "#81C784",
         errortext: "#E57373",
+        miche: {
+          blue: "#003f63", // Azul oscuro del logo
+          yellow: "#f9e27b", // Amarillo principal
+          yellowLight: "#ffe168", // Hover amarillo
+          green: "#285c3c", // Verde botella
+          beige: "#f3f1e6", // Fondo claro
+          tan: "#e3d9c6", // Fondo alterno
+          text: "#403d39", // Texto secundario
+        },
       },
     },
   },

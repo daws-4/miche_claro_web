@@ -3,21 +3,36 @@ import axios from "axios"
 import { useState, useEffect } from "react"
 import { Card, CardHeader, Form, Input, Button } from "@heroui/react";
 import { EyeSlashFilledIcon, EyeFilledIcon } from "@/components/icons";
+import { useRouter } from "next/navigation";
 
 
 export default function Home() {
+    const router = useRouter();
     const [submitted, setSubmitted] = useState<null | { [k: string]: FormDataEntryValue }>(null);
     const [isVisible, setIsVisible] = useState(false);
 
     const toggleVisibility = () => setIsVisible(!isVisible);
   
 
-    const onSubmit = (e:any) => {
+    const onSubmit = async (e:any) => {
         e.preventDefault();
 
         const data = Object.fromEntries(new FormData(e.currentTarget));
-
+        console.log(data);
         setSubmitted(data);
+        try{
+            const response = await axios.post('/api/auth/login', data)
+            if(response.status === 200) {
+                console.log("Login successful:", response.data);
+                router.push('/admin');
+            }else {
+                console.log("Login failed:", response.data);
+                alert("Login failed: " + response.data.message);
+            }
+
+        }catch (error) {
+                console.error("Error during login:", error);   
+        }
     };
     return (
         <div className='min-h-screen w-full bg-gradient-to-bl from-azul1 to-cyan-800'>
@@ -29,7 +44,7 @@ export default function Home() {
                         </CardHeader>
                     </Card>
                 </div>
-                <div className='flex justify-center items-center  max-w-lg sm:max-w-lg shadow-2xl'>
+                <div className='flex justify-center items-center  max-w-lg sm:max-w-lg shadow-2xl mb-12'>
                     <Card shadow="lg" radius="sm" >
                         <CardHeader className='bg-gray-300  border flex gap-4 justify-center items-center  '>
                             <Form className="w-full gap-8 px-6 py-4" onSubmit={onSubmit}>
@@ -39,7 +54,7 @@ export default function Home() {
                                     errorMessage="Nombre de usuario incorrecto"
                                     label="Usuario"
                                     labelPlacement="outside"
-                                    name="Usuario"
+                                    name="username"
                                     placeholder="Ingresa tu nombre de usuario"
                                     type="text"
                                     variant="bordered"
@@ -62,6 +77,7 @@ export default function Home() {
                                         </button>
                                     }
                                     label="Contraseña"
+                                    name="password"
                                     labelPlacement="outside"
                                     placeholder="Ingresa tu contraseña"
                                     type={isVisible ? "text" : "password"}
@@ -70,11 +86,6 @@ export default function Home() {
                                 <Button type="submit" variant="bordered" className=' w-full bg-lime-600'>
                                     Submit
                                 </Button>
-                                {submitted && (
-                                    <div className="text-small text-default-500">
-                                        You submitted: <code>{JSON.stringify(submitted)}</code>
-                                    </div>
-                                )}
                             </Form>
                         </CardHeader>
                     </Card>
