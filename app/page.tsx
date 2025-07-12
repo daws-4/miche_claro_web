@@ -6,12 +6,12 @@ import { GooglePlayIcon, AppStoreIcon } from "@/components/icons";
 import { useState, useEffect } from "react";
 
 
-function Counter({ to }: { to: string }) {
+function Counter({ to }: { to: number }) {
     const [count, setCount] = useState(0);
 
     useEffect(() => {
         let start = 0;
-        const end = parseInt(to);
+        const end = to;
         if (start === end) return;
 
         const step = 10; // Contar de 10 en 10
@@ -34,12 +34,12 @@ function Counter({ to }: { to: string }) {
 
     return <span>{count}</span>;
 }
-function CounterUser({ to }: { to: string }) {
+function CounterUser({ to }: { to: number }) {
     const [count, setCount] = useState(0);
 
     useEffect(() => {
         let start = 0;
-        const end = parseInt(to);
+        const end = to;
         if (start === end) return;
 
         const step = 10; // Contar de 10 en 10
@@ -240,8 +240,30 @@ export default function Home() {
             </section>
           
             {/* FOOTER */}
-            <footer className="py-6 text-center text-sm text-gray-600">
-                © 2025 Miche Claro. Todos los derechos reservados.
+            <footer className="py-10 px-6 bg-[#f3f1e6] text-gray-600">
+                <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
+                    <div>
+                        <h4 className="font-bold text-lg mb-2">Miche Claro</h4>
+                        <p className="text-sm">Tu app de confianza para vender y comprar alcohol con estilo.</p>
+                    </div>
+                    <div>
+                        <h4 className="font-bold text-lg mb-2">Navegación</h4>
+                        <ul className="space-y-1 text-sm">
+                            <li><a href="#precios" className="hover:underline">Precios</a></li>
+                            <li><a href="#registro" className="hover:underline">Registro</a></li>
+                            <li><a href="#iniciar" className="hover:underline">Iniciar sesión</a></li>
+                            <li><a href="#cta" className="hover:underline">Descargar</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 className="font-bold text-lg mb-2">Contacto</h4>
+                        <p className="text-sm">¿Dudas o soporte? Escríbenos a:</p>
+                        <a href="mailto:contacto@micheclaro.com" className="underline text-sm mt-1 block">contacto@micheclaro.com</a>
+                    </div>
+                </div>
+                <div className="text-center text-xs text-gray-700 mt-8">
+                    © 2025 Miche Claro. Todos los derechos reservados.
+                </div>
             </footer>
         </div>
     );
