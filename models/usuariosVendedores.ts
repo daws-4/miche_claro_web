@@ -45,7 +45,7 @@ export const DatosBancolombiaSchema = new Schema({
 
 export const DatosPagoMovilSchema = new Schema({
   cedula_rif: {
-    type: Number,
+    type: String,
     required: true,
   },
   telefono: {
@@ -53,6 +53,52 @@ export const DatosPagoMovilSchema = new Schema({
     required: true,
   },
   banco: {
+    enum: [
+      "Banco de Venezuela",
+      "Banesco",
+      "Banco Mercantil",
+      "BBVA Provincial",
+      "Banco Nacional de Crédito",
+      "Banco del Tesoro",
+      "Banco Occidental de Descuento",
+      "Bancamiga",
+      "Banco Venezolano de Crédito",
+      "Banco Exterior",
+      "Banco Bicentenario",
+      "Banco Activo",
+      "Bancaribe",
+      "Banplus",
+      "Banco Fondo Común",
+      "Banco Caroní",
+      "Banco Plaza",
+    ],
+    type: String,
+    required: true,
+  },
+});
+
+const DatosPropietarioSchema = new Schema({
+  nombre: {
+    type: String,
+    required: true,
+  }, 
+  apellido: {
+    type: String,
+    required: true,
+  },
+  cedula: {
+    type: String,
+    required: true,
+  },
+  telefono: {
+    type: String,
+    required: true,
+  },
+  email: {
+    type: String,
+    required: true,
+  }, 
+  direccion: {
     type: String,
     required: true,
   },
@@ -60,27 +106,61 @@ export const DatosPagoMovilSchema = new Schema({
 
 const usuariosVendedoresSchema = new Schema(
   {
-    email:{
+    email: {
       type: String,
       required: true,
       unique: true,
       trim: true,
     },
-    password:{
+    password: {
       type: String,
       required: true,
       trim: true,
     },
     nombre: {
       type: String,
+      required: true,
       trim: true,
     },
     direccion: {
       type: String,
+      required: true,
       trim: true,
+    },
+    estado: {
+      type: String,
+      required: true,
+      enum: [
+        "Amazonas",
+        "Anzoátegui",
+        "Apure",
+        "Aragua",
+        "Barinas",
+        "Bolívar",
+        "Carabobo",
+        "Cojedes",
+        "Delta Amacuro",
+        "Falcón",
+        "Guárico",
+        "Lara",
+        "Mérida",
+        "Miranda",
+        "Monagas",
+        "Nueva Esparta",
+        "Portuguesa",
+        "Sucre",
+        "Táchira",
+        "Trujillo",
+        "Vargas",
+        "Yaracuy",
+        "Zulia",
+        "Distrito Capital",
+      ],
+      default: "",
     },
     telefono1: {
       type: String,
+      required: true,
       trim: true,
     },
     telefono2: {
@@ -92,6 +172,7 @@ const usuariosVendedoresSchema = new Schema(
     datosZelle: {
       type: String,
     },
+    datosPropietario: DatosPropietarioSchema,
     pagos: [PagosSchema],
     activo: {
       type: Boolean,

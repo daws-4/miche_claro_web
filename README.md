@@ -21,26 +21,26 @@
  ##### --------  LISTA DE FUNCIONES DE CADA APARTADO DE LA APLICACIÓN  ---------  ######
 
  # Web Master: 
- - Crear, editar y eliminar usuarios vendedores (bodegas). [CRUD]
+ - Crear, editar y eliminar usuarios vendedores (bodegas). [CRUD] --TERMINADO--
  - Crear, editar y eliminar usuarios. [CRUD]
  - Crear, editar y eliminar usuarios delivery. [CRUD]
  - Aceptar o rechazar solicitudes de registro de usuarios vendedores (bodegas). [POST]
- - Verificar estados de cuenta de los usuarios vendedores (bodegas). [GET]
+ - Verificar estados de cuenta de los usuarios vendedores (bodegas). [GET] 
  - Verificar estados de cuenta de los usuarios. [GET]
  - Verificar las entregas de los usuarios delivery. [GET]
  - Verificar los estados de cuenta de los usuarios delivery. [GET]
  - Verificar pedidos de los usuarios compradores. [GET]
- - Ver datos de ingresos y gastos (pagos) de la aplicación. [GET]
- - Ver estadísticas de usuarios y ventas en diferentes escalas. [GET]
+ - Ver datos de ingresos y gastos (pagos) de la aplicación. [GET] --TERMINADO--
+ - Ver estadísticas de usuarios y ventas en diferentes escalas. [GET] --TERMINADO--
  - Autogestión de olvido de usuario o clave. [POST]
  
 - Definir la base de datos de la información a usar de:
-    - Usuarios administradores:
+    - Usuarios administradores: 
         - nombre de usuario
         - contraseña
         - ciudad asignada
         - rol
-    - Usuarios vendedores:
+    - Usuarios vendedores: --TERMINADO--
     - Usuarios compradores: 
         - cédula de identidad
         - correo electrónico
