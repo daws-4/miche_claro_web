@@ -81,7 +81,7 @@ const DatosPropietarioSchema = new Schema({
   nombre: {
     type: String,
     required: true,
-  }, 
+  },
   apellido: {
     type: String,
     required: true,
@@ -97,7 +97,8 @@ const DatosPropietarioSchema = new Schema({
   email: {
     type: String,
     required: true,
-  }, 
+    match: [/.+\@.+\..+/, "Por favor, introduce un email válido."],
+  },
   direccion: {
     type: String,
     required: true,

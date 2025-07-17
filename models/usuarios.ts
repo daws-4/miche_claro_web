@@ -37,6 +37,7 @@ const usuariosSchema = new Schema(
       type: String,
       unique: true,
       trim: true,
+      match: [/.+\@.+\..+/, "Por favor, introduce un email válido."],
     },
     password: {
       type: String,

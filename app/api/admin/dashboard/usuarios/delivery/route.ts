@@ -1,20 +1,28 @@
 import { NextResponse, NextRequest } from "next/server";
 import {connectDB} from "@/lib/db";
-import usuariosVendedores from "@/models/usuariosVendedores"; 
+import UsuariosDelivery from "@/models/usuariosDelivery"; // Ajusta la ruta a tu modelo
 import bcrypt from "bcryptjs";
 
-// GET: Obtener todos los vendedores
+// GET: Obtener todos los repartidores
 export async function GET() {
   try {
     await connectDB();
-    const vendedores = await usuariosVendedores.find({});
+    const deliveryUsers = await UsuariosDelivery.find({});
+    if (!deliveryUsers || deliveryUsers.length === 0) {
+        console.log(deliveryUsers);
+      return NextResponse.json(
+        { success: false, error: "No se encontraron repartidores" },
+        { status: 404 }
+      );
+    }
     return NextResponse.json(
-      { success: true, data: vendedores },
+      { success: true, data: deliveryUsers },
       { status: 200 }
     );
   } catch (error) {
+    console.log(error)
     const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred";
+      error instanceof Error ? error.message : "Ocurrió un error desconocido";
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 500 }
@@ -22,7 +30,7 @@ export async function GET() {
   }
 }
 
-// POST: Crear un nuevo vendedor
+// POST: Crear un nuevo repartidor
 export async function POST(req: NextRequest) {
   try {
     await connectDB();
@@ -32,16 +40,31 @@ export async function POST(req: NextRequest) {
     if (body.password) {
       const salt = await bcrypt.genSalt(10);
       body.password = await bcrypt.hash(body.password, salt);
+    } else {
+      return NextResponse.json(
+        { success: false, error: "La contraseña es obligatoria" },
+        { status: 400 }
+      );
     }
 
-    const vendedor = await usuariosVendedores.create(body);
+    // El campo 'estado' se recibe del body y se guarda directamente
+    // El 'estado_operativo' usará el valor por defecto del schema
+    delete body.estado_operativo;
+
+    const deliveryUser = await UsuariosDelivery.create(body);
     return NextResponse.json(
-      { success: true, data: vendedor },
+      { success: true, data: deliveryUser },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: any) {
+    if (error.code === 11000) {
+      return NextResponse.json(
+        { success: false, error: "El email o la cédula ya existen." },
+        { status: 409 }
+      );
+    }
     const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred";
+      error instanceof Error ? error.message : "Ocurrió un error desconocido";
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 400 }
@@ -49,7 +72,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// PUT: Actualizar un vendedor existente
+// PUT: Actualizar un repartidor existente
 export async function PUT(req: NextRequest) {
   try {
     await connectDB();
@@ -65,33 +88,36 @@ export async function PUT(req: NextRequest) {
 
     const body = await req.json();
 
-    // Si se está actualizando la contraseña, hashearla
     if (body.password) {
       const salt = await bcrypt.genSalt(10);
       body.password = await bcrypt.hash(body.password, salt);
     } else {
-      delete body.password; // No enviar la contraseña si no se cambia
+      delete body.password;
     }
 
-    const vendedor = await usuariosVendedores.findByIdAndUpdate(id, body, {
+    // El campo 'estado' se actualiza si viene en el body
+    // No se permite la actualización del 'estado_operativo' desde este formulario
+    delete body.estado_operativo;
+
+    const deliveryUser = await UsuariosDelivery.findByIdAndUpdate(id, body, {
       new: true,
       runValidators: true,
     });
 
-    if (!vendedor) {
+    if (!deliveryUser) {
       return NextResponse.json(
-        { success: false, error: "Vendedor no encontrado" },
+        { success: false, error: "Repartidor no encontrado" },
         { status: 404 }
       );
     }
 
     return NextResponse.json(
-      { success: true, data: vendedor },
+      { success: true, data: deliveryUser },
       { status: 200 }
     );
   } catch (error) {
     const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred";
+      error instanceof Error ? error.message : "Ocurrió un error desconocido";
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 400 }
@@ -99,7 +125,7 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// DELETE: Eliminar un vendedor
+// DELETE: Eliminar un repartidor
 export async function DELETE(req: NextRequest) {
   try {
     await connectDB();
@@ -113,11 +139,11 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const deletedVendedor = await usuariosVendedores.findByIdAndDelete(id);
+    const deletedUser = await UsuariosDelivery.findByIdAndDelete(id);
 
-    if (!deletedVendedor) {
+    if (!deletedUser) {
       return NextResponse.json(
-        { success: false, error: "Vendedor no encontrado" },
+        { success: false, error: "Repartidor no encontrado" },
         { status: 404 }
       );
     }
@@ -125,7 +151,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ success: true, data: {} }, { status: 200 });
   } catch (error) {
     const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred";
+      error instanceof Error ? error.message : "Ocurrió un error desconocido";
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 500 }

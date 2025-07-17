@@ -189,7 +189,7 @@ Administrar y supervisar toda la operación de la plataforma a nivel nacional y 
 - **Aprobación de registros:** Aceptar o rechazar solicitudes de nuevos vendedores.
 - **Supervisión financiera:** Verificar estados de cuenta de vendedores, compradores y repartidores.
 - **Monitoreo de entregas:** Consultar entregas realizadas y pendientes.
-- **Estadísticas y reportes:** Acceso a datos de ingresos, gastos y ventas, segmentados por región y usuario.
+- **Estadísticas y reportes:** Acceso a datos de ingresos, gastos y ventas, segmentados por región y usuario. 
 - **Gestión de roles:** Soporte para admins regionales y súper admins nacionales.
 - **Soporte técnico:** Autogestión de recuperación de usuario o clave.
 

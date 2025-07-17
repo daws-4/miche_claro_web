@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Card, CardBody, Input, Button, Checkbox, Select, SelectItem, addToast } from '@heroui/react';
+import { Card, CardBody, Input, Button, Checkbox, Select, SelectItem, addToast, Link } from '@heroui/react';
 import { EyeFilledIcon, EyeSlashFilledIcon } from "@/components/icons"; // Assuming you have these icons
 import axios from 'axios';
 
@@ -416,7 +416,11 @@ export default function GestionVendedoresPage() {
                         <Card key={usuario._id} className="border rounded-xl shadow-sm flex flex-col">
                             <CardBody className="p-4 space-y-2 flex-grow">
                                 <div className="flex justify-between items-start">
-                                    <h2 className="text-lg font-bold">{usuario.nombre}</h2>
+                                    <Link
+                                        key={usuario._id}
+                                        href={`/admin/dashboard/usuarios/delivery/${usuario._id}`}>
+                                        <h2 className="text-lg font-bold">{usuario.nombre}</h2>
+                                    </Link>
                                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${usuario.activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                         {usuario.activo ? 'Activo' : 'Inactivo'}
                                     </span>
