@@ -33,25 +33,15 @@ export async function POST(request: Request) {
   // **Replace with your actual authentication logic (e.g., database check)**
   if (data.username === admins.username && comparePassword) {
     // Create JWT token
-    let token;
-    if (admins.rol < 5) {
-      token = sign(
+      const token = sign(
         {
+          _id: admins._id,
           username: admins.username,
           rol: admins.rol,
-          ubicacion: admins.ubicacion,
+          estado: admins.estado,
         },
         SECRET_KEY
       );
-    } else if (admins.rol == 5) {
-      token = sign(
-        {
-          username: admins.username,
-          rol: admins.rol,
-        },
-        SECRET_KEY
-      );
-    }
 
     // Set the cookie using next/headers
     const cookieStore = await cookies();

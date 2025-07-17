@@ -2,10 +2,11 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardBody, Input, Button, Checkbox, Select, SelectItem, addToast, Link } from '@heroui/react';
-import { EyeFilledIcon, EyeSlashFilledIcon } from "@/components/icons"; // Assuming you have these icons
+import { EyeFilledIcon, EyeSlashFilledIcon } from "@/components/icons"; // Asume que tienes estos iconos
 import axios from 'axios';
 
-// --- Tipos de Datos y Constantes ---
+// --- Constantes para los Selectores ---
+const tiposDeVehiculo = ['Moto', 'Bicicleta', 'Carro', 'Otro'].map(v => ({ key: v, label: v }));
 const estadosDeVenezuela = [
     "Amazonas", "Anzoátegui", "Apure", "Aragua", "Barinas", "Bolívar", "Carabobo",
     "Cojedes", "Delta Amacuro", "Falcón", "Guárico", "Lara", "Mérida", "Miranda",
@@ -22,6 +23,7 @@ const bancosDeVenezuela = [
 ].map(banco => ({ key: banco, label: banco }));
 
 
+// --- Tipos de Datos ---
 type DatosPagoMovil = {
     cedula_rif: number | string;
     telefono: number | string;
@@ -79,9 +81,8 @@ type UsuarioFormModalProps = {
     isEditMode: boolean;
 };
 
-// --- Componente del Formulario (CORREGIDO para evitar error de Hooks) ---
+// --- Componente del Formulario ---
 const UsuarioFormModal = ({ isOpen, onClose, onSubmit, usuario, isEditMode }: UsuarioFormModalProps) => {
-
     const [formData, setFormData] = useState<UsuarioVendedorForm>({
         email: '', nombre: '', estado: '', direccion: '', telefono1: '', activo: true,
         datosPagoMovil: { cedula_rif: '', telefono: '', banco: '' },
@@ -113,7 +114,8 @@ const UsuarioFormModal = ({ isOpen, onClose, onSubmit, usuario, isEditMode }: Us
     }, [isOpen, isEditMode, usuario]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
+        const { name, value, type, checked } = e.target;
+        const valueToUpdate = type === 'checkbox' ? checked : value;
 
         setFormData(prev => {
             const newFormData = { ...prev };
@@ -124,22 +126,14 @@ const UsuarioFormModal = ({ isOpen, onClose, onSubmit, usuario, isEditMode }: Us
                 if (parentKey === 'datosPagoMovil' || parentKey === 'datosBancolombia' || parentKey === 'datosPropietario') {
                     const childKey = parts[1];
                     const nestedObject = { ...newFormData[parentKey] };
-                    (nestedObject as any)[childKey] = value;
+                    (nestedObject as any)[childKey] = valueToUpdate;
                     (newFormData as any)[parentKey] = nestedObject;
                 }
             } else {
-                (newFormData as any)[name] = value;
+                (newFormData as any)[name] = valueToUpdate;
             }
             return newFormData;
         });
-    };
-
-    // Handler específico para el Checkbox
-    const handleCheckboxChange = (isChecked: boolean) => {
-        setFormData(prev => ({
-            ...prev,
-            activo: isChecked
-        }));
     };
 
     const handleSelectChange = (name: string, value: string) => {
@@ -185,6 +179,7 @@ const UsuarioFormModal = ({ isOpen, onClose, onSubmit, usuario, isEditMode }: Us
                             <Input
                                 name="password"
                                 type={isVisible ? "text" : "password"}
+                                minLength={6}
                                 onChange={handleChange}
                                 placeholder={isEditMode ? "Nueva Contraseña (opcional)" : "Contraseña"}
                                 className="w-full md:col-span-2"
@@ -210,7 +205,7 @@ const UsuarioFormModal = ({ isOpen, onClose, onSubmit, usuario, isEditMode }: Us
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Input name="datosPropietario.nombre" value={formData.datosPropietario.nombre} onChange={handleChange} placeholder="Nombre del Propietario" className="w-full" required />
                             <Input name="datosPropietario.apellido" value={formData.datosPropietario.apellido} onChange={handleChange} placeholder="Apellido" className="w-full" required />
-                            <Input name="datosPropietario.cedula" value={formData.datosPropietario.cedula} onChange={handleChange} placeholder="Cédula" className="w-full" required />
+                            <Input name="datosPropietario.cedula" value={formData.datosPropietario.cedula} minLength={6}  onChange={handleChange} placeholder="Cédula" className="w-full" required />
                             <Input name="datosPropietario.telefono" value={formData.datosPropietario.telefono} onChange={handleChange} placeholder="Teléfono" className="w-full" required />
                             <Input name="datosPropietario.email" value={formData.datosPropietario.email} onChange={handleChange} placeholder="Email" className="w-full md:col-span-2" required />
                             <Input name="datosPropietario.direccion" value={formData.datosPropietario.direccion} onChange={handleChange} placeholder="Dirección" className="w-full md:col-span-2" required />
@@ -221,7 +216,7 @@ const UsuarioFormModal = ({ isOpen, onClose, onSubmit, usuario, isEditMode }: Us
                         <legend className="font-semibold px-2">Métodos de Pago</legend>
                         <h3 className="font-medium mb-2 text-sm text-gray-600">Pago Móvil</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                            <Input name="datosPagoMovil.cedula_rif" value={String(formData.datosPagoMovil.cedula_rif ?? '')} onChange={handleChange} placeholder="Cédula/RIF" required />
+                            <Input name="datosPagoMovil.cedula_rif" value={String(formData.datosPagoMovil.cedula_rif ?? '')} onChange={handleChange} placeholder="Cédula/RIF" minLength={6} required />
                             <Input name="datosPagoMovil.telefono" value={String(formData.datosPagoMovil.telefono ?? '')} onChange={handleChange} placeholder="Teléfono" required />
                             <Select
                                 label="Banco"
@@ -245,17 +240,13 @@ const UsuarioFormModal = ({ isOpen, onClose, onSubmit, usuario, isEditMode }: Us
                     </fieldset>
 
                     <div className="flex items-center space-x-2">
-                        <Checkbox
-                            id="activo"
-                            isSelected={formData.activo}
-                            onValueChange={handleCheckboxChange}
-                        />
+                        <Checkbox id="activo" isSelected={formData.activo} onValueChange={(v) => setFormData(p => ({ ...p, activo: v }))} />
                         <label htmlFor="activo" className="text-sm font-medium text-gray-700">Usuario Activo</label>
                     </div>
 
                     <div className="flex justify-end gap-4 mt-6">
                         <Button type="button" onPress={onClose} className="bg-gray-200">Cancelar</Button>
-                        <Button type="submit" className="bg-[#007D8A] text-white">{isEditMode ? 'Guardar Cambios' : 'Añadir Usuario'}</Button>
+                        <Button type="submit" className="bg-[#007D8A] text-white">{isEditMode ? 'Guardar Cambios' : 'Añadir Vendedor'}</Button>
                     </div>
                 </form>
             </div>
@@ -266,13 +257,37 @@ const UsuarioFormModal = ({ isOpen, onClose, onSubmit, usuario, isEditMode }: Us
 
 // --- Componente Principal de la Página ---
 export default function GestionVendedoresPage() {
+    const [admin, setAdmin] = useState<{ rol: number; estado: string } | null>(null);
+    const [isAdminLoading, setIsAdminLoading] = useState(true);
     const [usuarios, setUsuarios] = useState<UsuarioVendedorStored[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [estadoSeleccionado, setEstadoSeleccionado] = useState('Todos');
+    const [filtroEstado, setFiltroEstado] = useState('Todos');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [usuarioSeleccionado, setUsuarioSeleccionado] = useState<UsuarioVendedorForm | null>(null);
+
+    useEffect(() => {
+        const fetchInitialData = async () => {
+            try {
+                const authResponse = await axios.get('/api/admin/auth-status');
+                if (authResponse.data.success) {
+                    const currentAdmin = authResponse.data.data;
+                    setAdmin(currentAdmin);
+                    if (currentAdmin.rol < 5) {
+                        setFiltroEstado(currentAdmin.estado);
+                    }
+                }
+            } catch (error) {
+                console.error("No autenticado o error de sesión:", error);
+                addToast({ title: "Error de Sesión", description: "No se pudo verificar su sesión.", color: "danger" });
+            } finally {
+                setIsAdminLoading(false);
+            }
+            fetchUsuarios();
+        };
+        fetchInitialData();
+    }, []);
 
     const fetchUsuarios = async () => {
         try {
@@ -293,18 +308,19 @@ export default function GestionVendedoresPage() {
         }
     };
 
-    useEffect(() => {
-        fetchUsuarios();
-    }, []);
-
-    const estadosDisponibles = useMemo(() => ['Todos', ...new Set(usuarios.map(u => u.estado))], [usuarios]);
+    const estadosDisponibles = useMemo(() => {
+        if (admin && admin.rol < 5) {
+            return [admin.estado];
+        }
+        return ['Todos', ...new Set(usuarios.map(u => u.estado))].sort();
+    }, [usuarios, admin]);
 
     const usuariosFiltrados = useMemo(() =>
         usuarios.filter(u =>
-            (estadoSeleccionado === 'Todos' || u.estado === estadoSeleccionado) &&
+            (filtroEstado === 'Todos' || u.estado === filtroEstado) &&
             (u.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 u.email.toLowerCase().includes(searchTerm.toLowerCase()))
-        ), [usuarios, searchTerm, estadoSeleccionado]
+        ), [usuarios, searchTerm, filtroEstado]
     );
 
     const handleAñadir = () => {
@@ -347,7 +363,7 @@ export default function GestionVendedoresPage() {
             datosPropietario: { ...formData.datosPropietario },
             datosPagoMovil: {
                 banco: formData.datosPagoMovil.banco || '',
-                cedula_rif: String(formData.datosPagoMovil.cedula_rif), // Aseguramos que sea string para el schema
+                cedula_rif: String(formData.datosPagoMovil.cedula_rif),
                 telefono: parseValue(formData.datosPagoMovil.telefono)!,
             },
             datosBancolombia: {
@@ -377,8 +393,8 @@ export default function GestionVendedoresPage() {
         }
     };
 
-    if (isLoading) {
-        return <div className="p-6 text-center text-gray-500">Cargando vendedores...</div>
+    if (isLoading || isAdminLoading) {
+        return <div className="p-6 text-center text-gray-500">Cargando...</div>
     }
 
     return (
@@ -402,9 +418,11 @@ export default function GestionVendedoresPage() {
                             className="w-full sm:w-auto"
                         />
                         <select
-                            value={estadoSeleccionado}
-                            onChange={(e) => setEstadoSeleccionado(e.target.value)}
+                            value={filtroEstado}
+                            onChange={(e) => setFiltroEstado(e.target.value)}
                             className="p-2 rounded-lg border border-gray-300 bg-white w-full sm:w-auto"
+                            disabled={admin !== null && admin.rol < 5}
+                            title={admin && admin.rol < 5 ? `Solo tienes acceso a la región de ${admin.estado}` : 'Selecciona una región'}
                         >
                             {estadosDisponibles.map(estado => <option key={estado} value={estado}>{estado}</option>)}
                         </select>
@@ -416,10 +434,8 @@ export default function GestionVendedoresPage() {
                         <Card key={usuario._id} className="border rounded-xl shadow-sm flex flex-col">
                             <CardBody className="p-4 space-y-2 flex-grow">
                                 <div className="flex justify-between items-start">
-                                    <Link
-                                        key={usuario._id}
-                                        href={`/admin/dashboard/usuarios/delivery/${usuario._id}`}>
-                                        <h2 className="text-lg font-bold">{usuario.nombre}</h2>
+                                    <Link key={usuario._id} href={`/admin/dashboard/usuarios/vendedores/${usuario._id}`}>
+                                        <h2 className="text-lg font-bold hover:underline">{usuario.nombre}</h2>
                                     </Link>
                                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${usuario.activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                         {usuario.activo ? 'Activo' : 'Inactivo'}
@@ -443,5 +459,5 @@ export default function GestionVendedoresPage() {
                 )}
             </div>
         </>
-    );
+    )
 }

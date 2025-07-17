@@ -2,26 +2,35 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
-const SECRET_KEY = process.env.SECRET_KEY ;
+const SECRET_KEY = process.env.SECRET_KEY;
 
 export async function middleware(request: NextRequest) {
-  const token = request.cookies.get("loginCookie")?.value;
   const { pathname } = request.nextUrl;
 
   // Function to verify the JWT token
+  const token = request.cookies.get("loginCookie")?.value;
   async function verifyJWT(token: string) {
+    if (!SECRET_KEY) {
+      console.error("SECRET_KEY is not defined");
+      return null;
+    }
     try {
       const verified = await jwtVerify(
         token,
         new TextEncoder().encode(SECRET_KEY)
       );
-      return verified.payload as { username: string; rol?: string };
+      return verified.payload as {
+        username: string;
+        rol?: number;
+        estado?: string;
+        _id: string;
+      };
     } catch (error) {
       return null;
     }
   }
 
-  // Si el usuario NO está logeado, bloquea /admin/dashboard/:path* y /dashboard/:path*
+  // If the user is NOT logged in, block protected routes
   if (!token) {
     if (
       pathname.startsWith("/admin/dashboard") ||
@@ -32,38 +41,49 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Si el usuario está logeado
+  // If the user is logged in
   const payload = await verifyJWT(token);
 
-  // Si el usuario está logeado pero NO tiene valor en la propiedad rol
-  if (payload && !payload.rol) {
-    if (pathname.startsWith("/admin") || pathname.startsWith("/login")) {
+  // If the token is invalid or expired
+  if (!payload) {
+    // Clear the invalid cookie and redirect
+    const response = NextResponse.redirect(new URL("/", request.url));
+    response.cookies.delete("loginCookie");
+    return response;
+  }
+
+  // If the user is logged in but is NOT an admin (no role)
+  if (!payload.rol) {
+    if (pathname.startsWith("/admin")) {
       return NextResponse.redirect(new URL("/", request.url));
     }
     return NextResponse.next();
   }
 
-  // Si el usuario está logeado y tiene algún valor en la propiedad rol
-  if (payload && payload.rol) {
-    if (
-      pathname.startsWith("/admin/login") ||
-      pathname.startsWith("/dashboard") ||
-      pathname.startsWith("/login")
-    ) {
-      return NextResponse.redirect(new URL("/", request.url));
+  // If the user is an admin (has a role)
+  if (payload.rol) {
+    // --- NUEVA REGLA ---
+    // If the admin's role is less than 5, block access to the admin management page
+    if (pathname.startsWith("/admin/dashboard/admin") && payload.rol < 5) {
+      // Redirect them to the main dashboard or another appropriate page
+      return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+    }
+
+    // Prevent logged-in admins from accessing login pages
+    if (pathname.startsWith("/admin/login") || pathname.startsWith("/login")) {
+      return NextResponse.redirect(new URL("/admin/dashboard", request.url));
     }
     return NextResponse.next();
   }
 
-  // Si la cookie existe pero no tiene payload válido, redirige a inicio
-  return NextResponse.redirect(new URL("/", request.url));
+  // Default case if something unexpected happens
+  return NextResponse.next();
 }
 
 export const config = {
   matcher: [
     "/admin/dashboard/:path*",
     "/admin/login",
-    "/admin/:path*",
     "/dashboard/:path*",
     "/login",
   ],

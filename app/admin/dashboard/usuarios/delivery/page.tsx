@@ -7,7 +7,6 @@ import axios from 'axios';
 
 // --- Constantes para los Selectores ---
 const tiposDeVehiculo = ['Moto', 'Bicicleta', 'Carro', 'Otro'].map(v => ({ key: v, label: v }));
-const estadosOperativos = ['Activo', 'Inactivo', 'En-Ruta', 'Descansando'].map(e => ({ key: e, label: e }));
 const estadosDeVenezuela = [
     "Amazonas", "Anzoátegui", "Apure", "Aragua", "Barinas", "Bolívar", "Carabobo",
     "Cojedes", "Delta Amacuro", "Falcón", "Guárico", "Lara", "Mérida", "Miranda",
@@ -34,7 +33,7 @@ type UsuarioDeliveryForm = {
     email: string;
     password?: string;
     direccion: string;
-    estado: string; // Campo añadido
+    estado: string;
     fecha_nacimiento: string;
     vehiculo: VehiculoForm;
     activo: boolean;
@@ -48,7 +47,7 @@ type UsuarioDeliveryStored = {
     telefono: string;
     email: string;
     direccion: string;
-    estado: string; // Campo añadido
+    estado: string;
     fecha_nacimiento: string;
     vehiculo: {
         tipo: string;
@@ -135,12 +134,13 @@ const DeliveryUserFormModal = ({ isOpen, onClose, onSubmit, usuario, isEditMode 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Input name="nombre" value={formData.nombre} onChange={handleChange} placeholder="Nombre" required />
                             <Input name="apellido" value={formData.apellido} onChange={handleChange} placeholder="Apellido" required />
-                            <Input name="cedula" value={formData.cedula} onChange={handleChange} placeholder="Cédula" required />
+                            <Input name="cedula" value={formData.cedula} onChange={handleChange} minLength={6}  placeholder="Cédula" required />
                             <Input name="telefono" value={formData.telefono} onChange={handleChange} placeholder="Teléfono" required />
                             <Input name="email" type="email" value={formData.email} onChange={handleChange} placeholder="Email" className="md:col-span-2" required />
                             <Input
                                 name="password"
                                 type={isVisible ? "text" : "password"}
+                                minLength={6}
                                 onChange={handleChange}
                                 placeholder={isEditMode ? "Nueva Contraseña (opcional)" : "Contraseña"}
                                 className="w-full md:col-span-2"
@@ -188,6 +188,8 @@ const DeliveryUserFormModal = ({ isOpen, onClose, onSubmit, usuario, isEditMode 
 
 // --- Componente Principal de la Página ---
 export default function GestionDeliveryPage() {
+    const [admin, setAdmin] = useState<{ rol: number; estado: string } | null>(null);
+    const [isAdminLoading, setIsAdminLoading] = useState(true);
     const [deliveryUsers, setDeliveryUsers] = useState<UsuarioDeliveryStored[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -196,28 +198,56 @@ export default function GestionDeliveryPage() {
     const [isEditMode, setIsEditMode] = useState(false);
     const [usuarioSeleccionado, setUsuarioSeleccionado] = useState<UsuarioDeliveryForm | null>(null);
 
-    const fetchDeliveryUsers = async () => {
-        try {
-            setIsLoading(true);
-            const response = await axios.get('/api/admin/dashboard/usuarios/delivery'); // API ENDPOINT
-            if (response.data.success) {
-                setDeliveryUsers(response.data.data);
-            }
-        } catch (error) {
-            if (axios.isAxiosError(error) && error.response?.status === 404) {
-                setDeliveryUsers([]);
-            } else {
-                console.error("Error al obtener repartidores:", error);
-                addToast({ title: "Error", description: "No se pudieron cargar los repartidores.", color: "danger" });
-            }
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
+    // --- Obtener datos del admin y de los repartidores ---
     useEffect(() => {
-        fetchDeliveryUsers();
+        const fetchInitialData = async () => {
+            try {
+                // Primero, verificar el estado de autenticación del admin
+                const authResponse = await axios.get('/api/admin/auth-status');
+                if (authResponse.data.success) {
+                    const currentAdmin = authResponse.data.data;
+                    setAdmin(currentAdmin);
+
+                    // Aplicar el filtro de estado basado en el rol
+                    if (currentAdmin.rol < 5) {
+                        setFiltroEstado(currentAdmin.estado);
+                    }
+                }
+            } catch (error) {
+                console.error("No autenticado o error de sesión:", error);
+                addToast({ title: "Error de Sesión", description: "No se pudo verificar su sesión.", color: "danger" });
+            } finally {
+                setIsAdminLoading(false);
+            }
+
+            // Luego, obtener la lista de repartidores
+            try {
+                const usersResponse = await axios.get('/api/admin/dashboard/usuarios/delivery');
+                if (usersResponse.data.success) {
+                    setDeliveryUsers(usersResponse.data.data);
+                }
+            } catch (error) {
+                if (axios.isAxiosError(error) && error.response?.status === 404) {
+                    setDeliveryUsers([]);
+                } else {
+                    console.error("Error al obtener repartidores:", error);
+                    addToast({ title: "Error", description: "No se pudieron cargar los repartidores.", color: "danger" });
+                }
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchInitialData();
     }, []);
+
+    const estadosDisponibles = useMemo(() => {
+        // El super admin ve todos los estados, el admin regional solo ve el suyo
+        if (admin && admin.rol < 5) {
+            return [admin.estado];
+        }
+        return ['Todos', ...new Set(deliveryUsers.map(u => u.estado))].sort();
+    }, [deliveryUsers, admin]);
 
     const usuariosFiltrados = useMemo(() =>
         deliveryUsers.filter(u =>
@@ -244,9 +274,12 @@ export default function GestionDeliveryPage() {
     const handleEliminar = async (id: string) => {
         if (window.confirm('¿Estás seguro de que quieres eliminar a este repartidor?')) {
             try {
-                await axios.delete(`/api/admin/dashboard/usuarios/delivery?id=${id}`); // API ENDPOINT
+                await axios.delete(`/api/admin/dashboard/usuarios/delivery?id=${id}`);
                 addToast({ title: "Éxito", description: "Repartidor eliminado correctamente." });
-                fetchDeliveryUsers();
+                // Refrescar la lista después de eliminar
+                const response = await axios.get('/api/admin/dashboard/usuarios/delivery');
+                if (response.data.success) setDeliveryUsers(response.data.data);
+
             } catch (error) {
                 console.error("Error al eliminar repartidor:", error);
                 addToast({ title: "Error", description: "No se pudo eliminar al repartidor.", color: "danger" });
@@ -262,13 +295,15 @@ export default function GestionDeliveryPage() {
 
         try {
             if (isEditMode && processedData._id) {
-                await axios.put(`/api/admin/dashboard/usuarios/delivery?id=${processedData._id}`, processedData); // API ENDPOINT
+                await axios.put(`/api/admin/dashboard/usuarios/delivery?id=${processedData._id}`, processedData);
                 addToast({ title: "Éxito", description: "Repartidor actualizado correctamente." });
             } else {
-                await axios.post('/api/admin/dashboard/usuarios/delivery', processedData); // API ENDPOINT
+                await axios.post('/api/admin/dashboard/usuarios/delivery', processedData);
                 addToast({ title: "Éxito", description: "Repartidor creado correctamente." });
             }
-            fetchDeliveryUsers();
+            // Refrescar la lista después de guardar
+            const response = await axios.get('/api/admin/dashboard/usuarios/delivery');
+            if (response.data.success) setDeliveryUsers(response.data.data);
             setIsModalOpen(false);
         } catch (error) {
             console.error("Error al guardar el repartidor:", error);
@@ -277,8 +312,8 @@ export default function GestionDeliveryPage() {
         }
     };
 
-    if (isLoading) {
-        return <div className="p-6 text-center text-gray-500">Cargando repartidores...</div>
+    if (isLoading || isAdminLoading) {
+        return <div className="p-6 text-center text-gray-500">Cargando...</div>
     }
 
     return (
@@ -295,8 +330,14 @@ export default function GestionDeliveryPage() {
                     <h1 className="text-2xl font-bold">Gestión de Repartidores</h1>
                     <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
                         <Input type="text" placeholder="Buscar..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full sm:w-auto" />
-                        <select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)} className="p-2 rounded-lg border border-gray-300 bg-white w-full sm:w-auto">
-                            {['Todos', ...estadosDeVenezuela.map(e => e.key)].map(estado => <option key={estado} value={estado}>{estado}</option>)}
+                        <select
+                            value={filtroEstado}
+                            onChange={(e) => setFiltroEstado(e.target.value)}
+                            className="p-2 rounded-lg border border-gray-300 bg-white w-full sm:w-auto"
+                            disabled={admin !== null && admin.rol < 5}
+                            title={admin && admin.rol < 5 ? `Solo tienes acceso a la región de ${admin.estado}` : 'Selecciona una región'}
+                        >
+                            {estadosDisponibles.map(estado => <option key={estado} value={estado}>{estado}</option>)}
                         </select>
                         <Button onPress={handleAñadir} className="bg-[#007D8A] text-white font-semibold whitespace-nowrap">Añadir Repartidor</Button>
                     </div>
@@ -306,10 +347,8 @@ export default function GestionDeliveryPage() {
                         <Card key={usuario._id} className="border rounded-xl shadow-sm flex flex-col">
                             <CardBody className="p-4 space-y-2 flex-grow">
                                 <div className="flex justify-between items-start">
-                                    <Link
-                                        key={usuario._id}
-                                        href={`/admin/dashboard/usuarios/delivery/${usuario._id}`}>
-                                    <h2 className="text-lg font-bold">{usuario.nombre} {usuario.apellido}</h2>
+                                    <Link key={usuario._id} href={`/admin/dashboard/usuarios/delivery/${usuario._id}`}>
+                                        <h2 className="text-lg font-bold hover:underline">{usuario.nombre} {usuario.apellido}</h2>
                                     </Link>
                                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${usuario.activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                         {usuario.activo ? 'Activado' : 'Inactivo'}

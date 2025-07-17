@@ -1,19 +1,22 @@
 'use client';
-import React, { useState } from "react";
+
+import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardBody, Link, Button } from "@heroui/react";
-import { Menu, Config, User } from "@/components/icons";
-import { ThemeSwitch } from "@/components/theme-switch";
+import { Menu, Config, LogOutIcon, User, AdminIcon } from "@/components/icons"; // Asumo que tienes un icono 'Shield' o similar para Admin
 import { X } from "lucide-react";
+import axios from "axios";
+import { useRouter } from "next/navigation";
 
 // Define el tipo de cada ítem de menú
 type MenuItem = {
     titulo: string;
     href: string;
     Icon: React.ReactNode;
+    requiredRole?: number; // Rol mínimo para ver este ítem
 };
 
-// Array de elementos del menú
-const menuItems: MenuItem[] = [
+// Array base de elementos del menú
+const allMenuItems: MenuItem[] = [
     {
         titulo: "Inicio",
         href: "/admin/dashboard",
@@ -25,14 +28,70 @@ const menuItems: MenuItem[] = [
         Icon: <User />
     },
     {
+        titulo: "Admins", 
+        href: "/admin/dashboard/admins", 
+        Icon: <AdminIcon />,
+        requiredRole: 5,
+    },
+    {
         titulo: "Configuración",
-        href: "/admin/dashboard/configuracion",
+        href: "/admin/dashboard/config",
         Icon: <Config />
-    }
+    },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [admin, setAdmin] = useState<{ rol: number } | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const router = useRouter();
+
+    // --- Obtener datos del admin al cargar el layout ---
+    useEffect(() => {
+        const checkAuthStatus = async () => {
+            try {
+                const response = await axios.get('/api/admin/auth-status');
+                if (response.data.success) {
+                    setAdmin(response.data.data);
+                }
+            } catch (error) {
+                console.error("No autenticado, redirigiendo al login:", error);
+                router.push("/admin/login");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        checkAuthStatus();
+    }, [router]);
+
+    // --- Filtrar menú basado en el rol del admin ---
+    const menuItems = useMemo(() => {
+        if (!admin) return []; // No mostrar ítems si no hay datos del admin
+        return allMenuItems.filter(item => {
+            // Si el ítem no requiere un rol, siempre se muestra.
+            if (!item.requiredRole) {
+                return true;
+            }
+            // Si requiere un rol, se compara con el rol del admin.
+            return admin.rol >= item.requiredRole;
+        });
+    }, [admin]);
+
+
+    const LogOut = async () => {
+        try {
+            const response = await axios.get("/api/auth/logout")
+            if (response.status === 200) {
+                router.push("/admin/login"); // Redirige al login
+            }
+        } catch (error) {
+            console.error("Error al cerrar sesión:", error);
+        }
+    };
+
+    if (isLoading) {
+        return <div className="min-h-screen flex items-center justify-center">Cargando...</div>;
+    }
 
     return (
         <div className="min-h-screen flex flex-col sm:flex-row bg-gray-100">
@@ -51,17 +110,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             >
                 <h1 className="text-2xl font-bold">Miche Claro</h1>
                 <div className="text-lg mb-4">Menú</div>
-                <nav className="flex flex-col gap-4">
+                <nav className="flex flex-col gap-4 flex-grow">
                     {menuItems.map((item, index) => (
                         <Card key={index} isPressable radius="sm" shadow="lg" className="hover:shadow-xl">
                             <Link color="foreground" href={item.href} className="block">
-                                <CardBody className="flex flex-row items-center gap-3 bg-[#2096da]  px-4 py-2 rounded">
+                                <CardBody className="flex flex-row items-center gap-3 bg-[#2096da] px-4 py-2 rounded">
                                     {item.Icon}
                                     <span className="font-medium text-base">{item.titulo}</span>
                                 </CardBody>
                             </Link>
                         </Card>
                     ))}
+                    <Card isPressable onPress={LogOut} radius="sm" shadow="lg" className="hover:shadow-xl">
+                        <CardBody className="flex flex-row items-center gap-3 bg-[#2096da] px-4 py-2 rounded">
+                            <LogOutIcon />
+                            <span className="font-medium text-base">Cerrar Sesión</span>
+                        </CardBody>
+                    </Card>
                 </nav>
             </aside>
 

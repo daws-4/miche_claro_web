@@ -33,6 +33,10 @@ const usuariosSchema = new Schema(
         "El número de teléfono no puede tener más de 20 caracteres",
       ],
     },
+    fecha_nacimiento: {
+      type: Date,
+      required: [true, "Por favor, ingrese su fecha de nacimiento"],
+    },
     email: {
       type: String,
       unique: true,

@@ -25,39 +25,56 @@ type UsuarioDelivery = {
 
 export default function UsuariosPage() {
     const router = useRouter();
-    // --- Estados para datos dinámicos y carga ---
+    // --- Estados para datos dinámicos, admin y carga ---
     const [vendedores, setVendedores] = useState<UsuarioVendedor[]>([]);
     const [deliverys, setDeliverys] = useState<UsuarioDelivery[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [admin, setAdmin] = useState<{ rol: number; estado: string } | null>(null);
+    const [isAdminLoading, setIsAdminLoading] = useState(true);
     const [filtroEstado, setFiltroEstado] = useState<string>('Todas');
 
-    // --- Función para obtener datos del dashboard desde la API ---
-    const fetchDashboardData = async () => {
-        try {
-            setIsLoading(true);
-            const response = await axios.get('/api/admin/dashboard/usuarios');
-            if (response.data.success) {
-                setVendedores(response.data.data.vendedores);
-                setDeliverys(response.data.data.deliverys);
-            }
-        } catch (error) {
-            console.error("Error al obtener los datos del dashboard:", error);
-            addToast({ title: "Error", description: "No se pudieron cargar los datos de los usuarios.", color: "danger" });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    // --- Cargar datos cuando el componente se monta ---
+    // --- Cargar datos del admin y del dashboard al montar el componente ---
     useEffect(() => {
-        fetchDashboardData();
+        const fetchInitialData = async () => {
+            // Primero, verificar el estado de autenticación del admin
+            try {
+                const authResponse = await axios.get('/api/admin/auth-status');
+                if (authResponse.data.success) {
+                    const currentAdmin = authResponse.data.data;
+                    setAdmin(currentAdmin);
+                    // Aplicar el filtro de estado basado en el rol
+                    if (currentAdmin.rol < 5) {
+                        setFiltroEstado(currentAdmin.estado);
+                    }
+                }
+            } catch (error) {
+                console.error("No autenticado o error de sesión:", error);
+                addToast({ title: "Error de Sesión", description: "No se pudo verificar su sesión.", color: "danger" });
+            } finally {
+                setIsAdminLoading(false);
+            }
+
+            // Luego, obtener los datos del dashboard
+            try {
+                const response = await axios.get('/api/admin/dashboard/usuarios');
+                if (response.data.success) {
+                    setVendedores(response.data.data.vendedores);
+                    setDeliverys(response.data.data.deliverys);
+                }
+            } catch (error) {
+                console.error("Error al obtener los datos del dashboard:", error);
+                addToast({ title: "Error", description: "No se pudieron cargar los datos de los usuarios.", color: "danger" });
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchInitialData();
     }, []);
 
-    // --- Genera dinámicamente la lista de estados disponibles ---
     const estadosDisponibles = useMemo(() => {
         const estadosVendedores = vendedores.map(v => v.ubicacion);
         const estadosDeliverys = deliverys.map(d => d.ubicacion);
-        // Combina, elimina duplicados y ordena los estados
         const todosLosEstados = [...new Set([...estadosVendedores, ...estadosDeliverys])].sort();
         return ['Todas', ...todosLosEstados];
     }, [vendedores, deliverys]);
@@ -69,18 +86,16 @@ export default function UsuariosPage() {
 
     const deliveryFiltrados = useMemo(() => {
         if (filtroEstado === 'Todas') return deliverys;
-        // Asumiendo que la ubicación del delivery puede ser una dirección completa
         return deliverys.filter((d) => d.ubicacion.includes(filtroEstado));
     }, [filtroEstado, deliverys]);
 
     const topVendedores = vendedoresFiltrados.slice(0, 10);
     const topDeliverys = deliveryFiltrados.slice(0, 10);
 
-    // --- Renderizado condicional mientras se cargan los datos ---
-    if (isLoading) {
+    if (isLoading || isAdminLoading) {
         return (
             <div className="p-6 text-center text-gray-500">
-                Cargando datos del dashboard...
+                Cargando datos...
             </div>
         );
     }
@@ -95,11 +110,15 @@ export default function UsuariosPage() {
                         className="border border-gray-300 rounded p-2"
                         value={filtroEstado}
                         onChange={(e) => setFiltroEstado(e.target.value)}
+                        disabled={admin !== null && admin.rol < 5}
+                        title={admin && admin.rol < 5 ? `Solo tienes acceso a los datos de ${admin.estado}` : 'Selecciona un estado'}
                     >
-                        {/* El select ahora usa la lista dinámica de estados */}
-                        {estadosDisponibles.map((estado) => (
-                            <option key={estado} value={estado}>{estado}</option>
-                        ))}
+                        {admin && admin.rol < 5
+                            ? <option value={admin.estado}>{admin.estado}</option>
+                            : estadosDisponibles.map((estado) => (
+                                <option key={estado} value={estado}>{estado}</option>
+                            ))
+                        }
                     </select>
                 </div>
                 <div className="flex gap-4">
@@ -117,7 +136,6 @@ export default function UsuariosPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Vendedores */}
                 <section>
                     <h2 className="text-xl font-bold mb-4">Top 10 Vendedores</h2>
                     <Card className="bg-[#007D8A] text-white max-h-[600px] overflow-y-auto">
@@ -128,7 +146,7 @@ export default function UsuariosPage() {
                                 topVendedores.map((user) => (
                                     <Link
                                         key={user.id}
-                                        href={`/admin/dashboard/usuarios/vendedores`}
+                                        href={`/admin/dashboard/usuarios/vendedores/${user.id}`}
                                         className="block py-2 px-3 border-b border-white/20 last:border-none hover:bg-[#00686f] rounded-md transition-colors"
                                     >
                                         <div className="flex justify-between items-center">
@@ -148,7 +166,6 @@ export default function UsuariosPage() {
                     </Card>
                 </section>
 
-                {/* Delivery */}
                 <section>
                     <h2 className="text-xl font-bold mb-4">Top 10 Delivery</h2>
                     <Card className="bg-orange-500 text-white max-h-[600px] overflow-y-auto">
@@ -159,7 +176,7 @@ export default function UsuariosPage() {
                                 topDeliverys.map((user) => (
                                     <Link
                                         key={user.id}
-                                        href={`/admin/dashboard/usuarios/delivery`}
+                                        href={`/admin/dashboard/usuarios/delivery/${user.id}`}
                                         className="block py-2 px-3 border-b border-white/20 last:border-none hover:bg-orange-600 rounded-md transition-colors"
                                     >
                                         <div className="flex justify-between items-center">

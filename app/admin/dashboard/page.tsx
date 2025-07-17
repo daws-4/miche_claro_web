@@ -1,55 +1,23 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Card, CardBody } from '@heroui/react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Card, CardBody, addToast } from '@heroui/react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import axios from 'axios';
 
-const ventas = [
-    {
-        mes: 'Enero',
-        region: 'Zulia',
-        totalVentas: 100,
-        pagado: 70,
-        porPagar: 30,
-        pedidosFinalizados: 80,
-        pedidosCancelados: 20,
-        montoFinalizados: 8000,
-        montoCancelados: 2000,
-    },
-    {
-        mes: 'Febrero',
-        region: 'Zulia',
-        totalVentas: 150,
-        pagado: 90,
-        porPagar: 60,
-        pedidosFinalizados: 100,
-        pedidosCancelados: 50,
-        montoFinalizados: 10000,
-        montoCancelados: 3000,
-    },
-    {
-        mes: 'Enero',
-        region: 'Lara',
-        totalVentas: 70,
-        pagado: 50,
-        porPagar: 20,
-        pedidosFinalizados: 60,
-        pedidosCancelados: 10,
-        montoFinalizados: 6000,
-        montoCancelados: 1000,
-    },
+// --- Datos de ejemplo (en el futuro, estos también vendrán de una API) ---
+const ventasIniciales = [
+    { mes: 'Enero', region: 'Zulia', totalVentas: 100, pagado: 70, porPagar: 30, pedidosFinalizados: 80, pedidosCancelados: 20, montoFinalizados: 8000, montoCancelados: 2000 },
+    { mes: 'Febrero', region: 'Zulia', totalVentas: 150, pagado: 90, porPagar: 60, pedidosFinalizados: 100, pedidosCancelados: 50, montoFinalizados: 10000, montoCancelados: 3000 },
+    { mes: 'Enero', region: 'Lara', totalVentas: 70, pagado: 50, porPagar: 20, pedidosFinalizados: 60, pedidosCancelados: 10, montoFinalizados: 6000, montoCancelados: 1000 },
 ];
 
-const usuariosPorRegion = [
+const usuariosIniciales = [
     { region: 'Zulia', mes: 'Enero', vendedores: 5, consumidores: 12, delivery: 3 },
     { region: 'Zulia', mes: 'Febrero', vendedores: 6, consumidores: 15, delivery: 2 },
     { region: 'Lara', mes: 'Enero', vendedores: 3, consumidores: 10, delivery: 1 },
     { region: 'Lara', mes: 'Febrero', vendedores: 4, consumidores: 8, delivery: 1 },
-    { region: 'Todas', mes: 'Enero', vendedores: 8, consumidores: 22, delivery: 4 }, // para asegurar compatibilidad
 ];
-
-const mesesDisponibles = [...new Set(ventas.map(v => v.mes))];
-const regionesDisponibles = ['Todas', ...new Set(ventas.map(v => v.region))];
 
 const metricas = [
     { key: 'totalVentas', label: 'Total de Ventas', color: 'bg-[#007D8A]', prefix: '' },
@@ -66,15 +34,55 @@ const metricas = [
 ];
 
 export default function Dashboard() {
+    // --- Estados para el admin y los datos del dashboard ---
+    const [admin, setAdmin] = useState<{ rol: number; estado: string } | null>(null);
+    const [isAdminLoading, setIsAdminLoading] = useState(true);
+    const [ventas, setVentas] = useState(ventasIniciales);
+    const [usuariosPorRegion, setUsuariosPorRegion] = useState(usuariosIniciales);
+
     const [mesSeleccionado, setMesSeleccionado] = useState('Enero');
-    const [regionSeleccionada, setRegionSeleccionada] = useState('Zulia');
+    const [regionSeleccionada, setRegionSeleccionada] = useState('Todas');
+
+    // --- Obtener datos del admin al cargar la página ---
+    useEffect(() => {
+        const checkAuthStatus = async () => {
+            try {
+                const response = await axios.get('/api/admin/auth-status');
+                if (response.data.success) {
+                    setAdmin(response.data.data);
+                }
+            } catch (error) {
+                console.error("No autenticado o error de sesión:", error);
+                addToast({ title: "Error de Sesión", description: "No se pudo verificar la sesión del administrador.", color: "danger" });
+                // Opcional: Redirigir al login si no está autenticado
+                // window.location.href = '/admin/login';
+            } finally {
+                setIsAdminLoading(false);
+            }
+        };
+        checkAuthStatus();
+    }, []);
+
+    // --- Lógica de Roles ---
+    useEffect(() => {
+        if (admin) { // Solo se ejecuta cuando 'admin' tiene datos
+            if (admin.rol < 5) {
+                setRegionSeleccionada(admin.estado);
+            } else {
+                setRegionSeleccionada('Todas');
+            }
+        }
+    }, [admin]);
+
+    const mesesDisponibles = useMemo(() => [...new Set(ventas.map(v => v.mes))], [ventas]);
+    const regionesDisponibles = useMemo(() => ['Todas', ...new Set(ventas.map(v => v.region))], [ventas]);
 
     const datosFiltrados = useMemo(() => (
         ventas.filter(v =>
             v.mes === mesSeleccionado &&
             (regionSeleccionada === 'Todas' || v.region === regionSeleccionada)
         )
-    ), [mesSeleccionado, regionSeleccionada]);
+    ), [mesSeleccionado, regionSeleccionada, ventas]);
 
     const usuariosFiltrados = useMemo(() => {
         const filtrados = usuariosPorRegion.filter(u =>
@@ -82,13 +90,13 @@ export default function Dashboard() {
             (regionSeleccionada === 'Todas' || u.region === regionSeleccionada)
         );
         return filtrados.reduce((acc, u) => ({
-            vendedores: acc.vendedores + u.vendedores,
-            consumidores: acc.consumidores + u.consumidores,
-            delivery: acc.delivery + u.delivery,
+            vendedores: (acc.vendedores || 0) + u.vendedores,
+            consumidores: (acc.consumidores || 0) + u.consumidores,
+            delivery: (acc.delivery || 0) + u.delivery,
         }), { vendedores: 0, consumidores: 0, delivery: 0 });
-    }, [mesSeleccionado, regionSeleccionada]);
+    }, [mesSeleccionado, regionSeleccionada, usuariosPorRegion]);
 
-    const resumen:Record<string, number> = useMemo(() => {
+    const resumen: Record<string, number> = useMemo(() => {
         const acumulado = datosFiltrados.reduce((acc, v) => ({
             totalVentas: acc.totalVentas + v.totalVentas,
             pagado: acc.pagado + v.pagado,
@@ -107,31 +115,18 @@ export default function Dashboard() {
         const totalUsuarios = usuariosFiltrados.vendedores + usuariosFiltrados.consumidores + usuariosFiltrados.delivery;
         const totalPedidos = acumulado.pedidosFinalizados + acumulado.pedidosCancelados;
 
-        return {
-            ...acumulado,
-            ...usuariosFiltrados,
-            totalUsuarios,
-            totalPedidos
-        };
+        return { ...acumulado, ...usuariosFiltrados, totalUsuarios, totalPedidos };
     }, [datosFiltrados, usuariosFiltrados]);
 
     const datosParaGrafico = useMemo(() => {
-        if (regionSeleccionada !== 'Todas') {
-            return datosFiltrados;
-        }
-
+        if (regionSeleccionada !== 'Todas') return datosFiltrados;
         const dataMes = ventas.filter(v => v.mes === mesSeleccionado);
-        const suma = dataMes.reduce(
-            (acc, curr) => ({
-                mes: mesSeleccionado,
-                pagado: acc.pagado + curr.pagado,
-                porPagar: acc.porPagar + curr.porPagar,
-            }),
-            { mes: mesSeleccionado, pagado: 0, porPagar: 0 }
-        );
-
-        return [suma]; 
-    }, [regionSeleccionada, mesSeleccionado]);
+        return [dataMes.reduce((acc, curr) => ({
+            mes: mesSeleccionado,
+            pagado: acc.pagado + curr.pagado,
+            porPagar: acc.porPagar + curr.porPagar,
+        }), { mes: mesSeleccionado, pagado: 0, porPagar: 0 })];
+    }, [regionSeleccionada, mesSeleccionado, datosFiltrados, ventas]);
 
     const datosUsuariosParaGrafico = useMemo(() => {
         const filtrados = usuariosPorRegion.filter(u =>
@@ -139,14 +134,13 @@ export default function Dashboard() {
             (regionSeleccionada === 'Todas' || u.region === regionSeleccionada)
         );
         if (!filtrados.length) return [];
-        const acumulado = filtrados.reduce((acc, curr) => ({
+        return [filtrados.reduce((acc, curr) => ({
             mes: curr.mes,
             vendedores: acc.vendedores + curr.vendedores,
             consumidores: acc.consumidores + curr.consumidores,
             delivery: acc.delivery + curr.delivery,
-        }), { mes: mesSeleccionado, vendedores: 0, consumidores: 0, delivery: 0 });
-        return [acumulado];
-    }, [mesSeleccionado, regionSeleccionada]);
+        }), { mes: mesSeleccionado, vendedores: 0, consumidores: 0, delivery: 0 })];
+    }, [mesSeleccionado, regionSeleccionada, usuariosPorRegion]);
 
     const renderGrafico = (titulo: string, data: any[], barras: { key: string; fill: string; name: string }[]) => (
         <div className="bg-white rounded-xl border mt-6 p-4">
@@ -156,13 +150,15 @@ export default function Dashboard() {
                     <XAxis dataKey="mes" />
                     <YAxis />
                     <Tooltip />
-                    {barras.map(bar => (
-                        <Bar key={bar.key} dataKey={bar.key} fill={bar.fill} name={bar.name} />
-                    ))}
+                    {barras.map(bar => <Bar key={bar.key} dataKey={bar.key} fill={bar.fill} name={bar.name} />)}
                 </BarChart>
             </ResponsiveContainer>
         </div>
     );
+
+    if (isAdminLoading) {
+        return <div className="p-6 text-center text-gray-500">Verificando sesión...</div>;
+    }
 
     return (
         <div className="p-4 space-y-6 bg-white min-h-screen text-black">
@@ -170,32 +166,36 @@ export default function Dashboard() {
                 <select value={mesSeleccionado} onChange={(e) => setMesSeleccionado(e.target.value)} className="p-2 rounded-lg border border-gray-300">
                     {mesesDisponibles.map(mes => <option key={mes} value={mes}>{mes}</option>)}
                 </select>
-                <select value={regionSeleccionada} onChange={(e) => setRegionSeleccionada(e.target.value)} className="p-2 rounded-lg border border-gray-300">
-                    {regionesDisponibles.map(region => <option key={region} value={region}>{region}</option>)}
+                <select
+                    value={regionSeleccionada}
+                    onChange={(e) => setRegionSeleccionada(e.target.value)}
+                    className="p-2 rounded-lg border border-gray-300"
+                    disabled={admin !== null && admin.rol < 5}
+                    title={admin && admin.rol < 5 ? `Solo tienes acceso a la región de ${admin.estado}` : 'Selecciona una región'}
+                >
+                    {admin && admin.rol < 5
+                        ? <option value={admin.estado}>{admin.estado}</option>
+                        : regionesDisponibles.map(region => <option key={region} value={region}>{region}</option>)
+                    }
                 </select>
             </div>
 
-            {/* MÉTRICAS */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {metricas.map(({ key, label, color, prefix, extraKey }) => (
                     <Card key={key} className={`${color} text-white`}>
                         <CardBody>
                             <p className="text-sm">{label}</p>
                             <h2 className="text-2xl font-bold">{prefix}{resumen[key]}</h2>
-                            {extraKey && (
-                                <p className="text-sm mt-1">Total: ${resumen[extraKey]}</p>
-                            )}
+                            {extraKey && <p className="text-sm mt-1">Total: ${resumen[extraKey]}</p>}
                         </CardBody>
                     </Card>
                 ))}
             </div>
 
-            {/* GRÁFICOS */}
             {renderGrafico("Gráfico de Ventas", datosParaGrafico, [
                 { key: 'pagado', fill: '#007D8A', name: 'Pagado' },
                 { key: 'porPagar', fill: '#FFA500', name: 'Por Pagar' },
             ])}
-
             {renderGrafico("Gráfico de Usuarios por Mes", datosUsuariosParaGrafico, [
                 { key: 'vendedores', fill: '#007D8A', name: 'Vendedores' },
                 { key: 'consumidores', fill: '#FFA500', name: 'Consumidores' },
