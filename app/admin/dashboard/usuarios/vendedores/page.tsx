@@ -6,7 +6,6 @@ import { EyeFilledIcon, EyeSlashFilledIcon } from "@/components/icons"; // Asume
 import axios from 'axios';
 
 // --- Constantes para los Selectores ---
-const tiposDeVehiculo = ['Moto', 'Bicicleta', 'Carro', 'Otro'].map(v => ({ key: v, label: v }));
 const estadosDeVenezuela = [
     "Amazonas", "Anzoátegui", "Apure", "Aragua", "Barinas", "Bolívar", "Carabobo",
     "Cojedes", "Delta Amacuro", "Falcón", "Guárico", "Lara", "Mérida", "Miranda",
@@ -21,6 +20,11 @@ const bancosDeVenezuela = [
     "Banco Activo", "Bancaribe", "Banplus", "Banco Fondo Común (BFC)",
     "Banco Caroní", "Banco Plaza"
 ].map(banco => ({ key: banco, label: banco }));
+
+const tiposDeCuenta = [
+    { key: "Ahorros", label: "Ahorros" },
+    { key: "Corriente", label: "Corriente" },
+];
 
 
 // --- Tipos de Datos ---
@@ -86,7 +90,7 @@ const UsuarioFormModal = ({ isOpen, onClose, onSubmit, usuario, isEditMode }: Us
     const [formData, setFormData] = useState<UsuarioVendedorForm>({
         email: '', nombre: '', estado: '', direccion: '', telefono1: '', activo: true,
         datosPagoMovil: { cedula_rif: '', telefono: '', banco: '' },
-        datosBancolombia: { nequi: '', numero_cuenta: '', tipo_cuenta: '' },
+        datosBancolombia: { nequi: '', numero_cuenta: '', tipo_cuenta: "" },
         datosZelle: '',
         datosPropietario: { nombre: '', apellido: '', cedula: '', telefono: '', email: '', direccion: '' },
     });
@@ -99,7 +103,7 @@ const UsuarioFormModal = ({ isOpen, onClose, onSubmit, usuario, isEditMode }: Us
             const initialState = isEditMode && usuario ?
                 {
                     ...usuario,
-                    datosBancolombia: usuario.datosBancolombia || { nequi: '', numero_cuenta: '', tipo_cuenta: '' },
+                    datosBancolombia: usuario.datosBancolombia || { nequi: '', numero_cuenta: '', tipo_cuenta: "" },
                     datosPropietario: usuario.datosPropietario || { nombre: '', apellido: '', cedula: '', telefono: '', email: '', direccion: '' },
                 } :
                 {
@@ -107,7 +111,7 @@ const UsuarioFormModal = ({ isOpen, onClose, onSubmit, usuario, isEditMode }: Us
                     datosPagoMovil: { cedula_rif: '', telefono: '', banco: '' },
                     datosBancolombia: { nequi: '', numero_cuenta: '', tipo_cuenta: '' },
                     datosZelle: '',
-                    datosPropietario: { nombre: '', apellido: '', cedula: '', telefono: '', email: '', direccion: '' },
+                    datosPropietario: { nombre: '', apellido: '', cedula: '', telefono: '', email: '', direccion: '' }
                 };
             setFormData(initialState);
         }
@@ -143,6 +147,11 @@ const UsuarioFormModal = ({ isOpen, onClose, onSubmit, usuario, isEditMode }: Us
             setFormData(prev => ({
                 ...prev,
                 datosPagoMovil: { ...prev.datosPagoMovil, banco: value }
+            }));
+        } else if (name === "tipo_cuenta") {
+            setFormData((prev) => ({
+                ...prev,
+                datosBancolombia: { ...prev.datosBancolombia, tipo_cuenta: value }
             }));
         }
     };
@@ -205,7 +214,7 @@ const UsuarioFormModal = ({ isOpen, onClose, onSubmit, usuario, isEditMode }: Us
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Input name="datosPropietario.nombre" value={formData.datosPropietario.nombre} onChange={handleChange} placeholder="Nombre del Propietario" className="w-full" required />
                             <Input name="datosPropietario.apellido" value={formData.datosPropietario.apellido} onChange={handleChange} placeholder="Apellido" className="w-full" required />
-                            <Input name="datosPropietario.cedula" value={formData.datosPropietario.cedula} minLength={6}  onChange={handleChange} placeholder="Cédula" className="w-full" required />
+                            <Input name="datosPropietario.cedula" value={formData.datosPropietario.cedula} minLength={6} onChange={handleChange} placeholder="Cédula" className="w-full" required />
                             <Input name="datosPropietario.telefono" value={formData.datosPropietario.telefono} onChange={handleChange} placeholder="Teléfono" className="w-full" required />
                             <Input name="datosPropietario.email" value={formData.datosPropietario.email} onChange={handleChange} placeholder="Email" className="w-full md:col-span-2" required />
                             <Input name="datosPropietario.direccion" value={formData.datosPropietario.direccion} onChange={handleChange} placeholder="Dirección" className="w-full md:col-span-2" required />
@@ -235,6 +244,17 @@ const UsuarioFormModal = ({ isOpen, onClose, onSubmit, usuario, isEditMode }: Us
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Input name="datosBancolombia.nequi" value={String(formData.datosBancolombia?.nequi ?? '')} onChange={handleChange} placeholder="Nequi" />
                             <Input name="datosBancolombia.numero_cuenta" value={String(formData.datosBancolombia?.numero_cuenta ?? '')} onChange={handleChange} placeholder="Cuenta Bancolombia" />
+                            <Select
+                                label="Tipo de Cuenta"
+                                placeholder="Selecciona"
+                                selectedKeys={formData.datosBancolombia?.tipo_cuenta ? [formData.datosBancolombia.tipo_cuenta] : []}
+                                onSelectionChange={(keys) => handleSelectChange('tipo_cuenta', Array.from(keys)[0] as string)}
+                                className="w-full"
+                            >
+                                {tiposDeCuenta.map((cuenta) => (
+                                    <SelectItem key={cuenta.key}>{cuenta.label}</SelectItem>
+                                ))}
+                            </Select>
                             <Input name="datosZelle" value={formData.datosZelle || ''} onChange={handleChange} placeholder="Email Zelle" className="md:col-span-2" />
                         </div>
                     </fieldset>

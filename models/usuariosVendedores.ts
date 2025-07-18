@@ -6,7 +6,7 @@ export const PagosSchema = new Schema({
     required: true,
   },
   fecha_de_facturacion: {
-    type: String,
+    type: Date,
     required: true,
   },
   monto_a_pagar: {
@@ -14,32 +14,34 @@ export const PagosSchema = new Schema({
     required: true,
   },
   fecha_de_cancelacion: {
-    type: String,
+    type: Date,
     required: true,
   },
   divisa_cancelada: {
     type: String,
+    enum: ["USD", "VES", "COP", "EUR"],
     required: true,
   },
   monto_cancelado: {
     type: Number,
     required: true,
   },
-  cambio_divisa: {
-    type: String,
+  tasa_de_cambio: {
+    type: Number,
     required: true,
   },
 });
 
 export const DatosBancolombiaSchema = new Schema({
   nequi: {
-    type: Number,
+    type: String,
   },
   numero_cuenta: {
-    type: Number,
+    type: String,
   },
   tipo_cuenta: {
     type: String,
+    enum: ["Ahorros", "Corriente"],
   },
 });
 
@@ -49,10 +51,11 @@ export const DatosPagoMovilSchema = new Schema({
     required: true,
   },
   telefono: {
-    type: Number,
+    type: String,
     required: true,
   },
   banco: {
+    type: String,
     enum: [
       "Banco de Venezuela",
       "Banesco",
@@ -72,7 +75,6 @@ export const DatosPagoMovilSchema = new Schema({
       "Banco Caroní",
       "Banco Plaza",
     ],
-    type: String,
     required: true,
   },
 });
@@ -157,7 +159,6 @@ const usuariosVendedoresSchema = new Schema(
         "Zulia",
         "Distrito Capital",
       ],
-      default: "",
     },
     telefono1: {
       type: String,
