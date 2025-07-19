@@ -192,6 +192,11 @@ const usuariosVendedoresSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    aceptaTerminos: {
+      type: Boolean,
+      required: true,
+      default: false,
+    },
   },
   {
     timestamps: true,

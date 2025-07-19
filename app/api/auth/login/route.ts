@@ -1,69 +1,83 @@
-import { NextResponse } from "next/server";
-import { sign } from "jsonwebtoken";
-import { cookies } from "next/headers";
-import { connectDB } from "@/lib/db";
-import usuariosVendedores from "@/models/usuariosVendedores";
+import { NextResponse, NextRequest } from "next/server";
+import {connectDB} from "@/lib/db"; 
+import UsuariosVendedores from "@/models/usuariosVendedores";
 import bcrypt from "bcryptjs";
+import { SignJWT } from "jose";
+import { cookies } from "next/headers";
 
-const SECRET_KEY = process.env.SECRET_KEY || "your-secret-key";
+const SECRET_KEY = process.env.SECRET_KEY;
 
-export async function POST(request: Request) {
-  await connectDB(); // Ensure the database connection is established
-  const data = await request.json();
-  console.log(data);
-  const admins = await usuariosVendedores.findOne({ email: data.email });
-  console.log(admins);
-  if (!admins) {
-    return NextResponse.json(
-      { message: "Missing username or password" },
-      { status: 400 }
-    );
+// POST: Maneja el inicio de sesión de los usuariosVendedores
+export async function POST(req: NextRequest) {
+  if (!SECRET_KEY) {
+    throw new Error("La clave secreta de JWT no está definida.");
   }
-const comparePassword= await bcrypt.compare(data.password, admins.password)
-  if (
-    admins.length == 0 ||
-    !comparePassword
-  ) {
-    return NextResponse.json(
-      {
-        message: "Invalid credentials",
-      },
-      {
-        status: 401,
-      }
-    );
-  }
-  // **Replace with your actual authentication logic (e.g., database check)**
-  if (data.username === admins.email && comparePassword) {
-    // Create JWT token
-    const token = sign(
-      {
-        username: admins.nombre,
-      },
-      SECRET_KEY
-    );
 
-    // Set the cookie using next/headers
-    const cookieStore = await cookies();
-    cookieStore.set({
-      name: "loginCookie",
+  try {
+    await connectDB();
+    const { email, password } = await req.json();
+
+    if (!email || !password) {
+      return NextResponse.json(
+        { success: false, error: "Email y contraseña son obligatorios." },
+        { status: 400 }
+      );
+    }
+
+    // Busca al usuario por su email y se asegura de incluir la contraseña en el resultado
+    const user = await UsuariosVendedores.findOne({ email }).select("+password");
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "El usuario no existe." },
+        { status: 404 }
+      );
+    }
+
+    // Compara la contraseña enviada con la hasheada en la base de datos
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return NextResponse.json(
+        { success: false, error: "Contraseña incorrecta." },
+        { status: 401 }
+      );
+    }
+
+    // Si todo es correcto, crea el token JWT
+    const token = await new SignJWT({
+      _id: user._id,
+      email: user.email,
+      nombre: user.nombre,
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setIssuedAt()
+      .setExpirationTime("2h") // El token expira en 2 horas
+      .sign(new TextEncoder().encode(SECRET_KEY));
+
+    // Guarda el token en una cookie segura
+    (await
+      // Guarda el token en una cookie segura
+      cookies()).set({
+      name: "userSessionCookie",
       value: token,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 60 * 60 * 24, // 24 hours
       path: "/",
+      maxAge: 60 * 60 * 2, // 2 horas en segundos
     });
+
     return NextResponse.json(
-      { message: "Authentication successful!" },
-      {
-        status: 200,
-      }
+      { success: true, message: "Inicio de sesión exitoso." },
+      { status: 200 }
     );
-  } else {
+  } catch (error: any) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Ocurrió un error desconocido.";
     return NextResponse.json(
-      { message: "Invalid credentials" },
-      { status: 401 }
+      { success: false, error: errorMessage },
+      { status: 500 }
     );
   }
 }
