@@ -20,6 +20,7 @@ export const PagosSchema = new Schema({
   divisa_cancelada: {
     type: String,
     enum: ["USD", "VES", "COP", "EUR"],
+    default: "USD",
     required: true,
   },
   monto_cancelado: {
@@ -41,7 +42,8 @@ export const DatosBancolombiaSchema = new Schema({
   },
   tipo_cuenta: {
     type: String,
-    enum: ["Ahorros", "Corriente"],
+    enum: ["Ahorros", "Corriente", ""],
+    default: "",
   },
 });
 
@@ -80,32 +82,37 @@ export const DatosPagoMovilSchema = new Schema({
 });
 
 const DatosPropietarioSchema = new Schema({
-  nombre: {
-    type: String,
-    required: true,
-  },
-  apellido: {
-    type: String,
-    required: true,
-  },
-  cedula: {
-    type: String,
-    required: true,
-  },
-  telefono: {
-    type: String,
-    required: true,
-  },
+  nombre: { type: String, required: true },
+  apellido: { type: String, required: true },
+  cedula: { type: String, required: true },
+  telefono: { type: String, required: true },
   email: {
     type: String,
     required: true,
     match: [/.+\@.+\..+/, "Por favor, introduce un email válido."],
   },
-  direccion: {
-    type: String,
-    required: true,
-  },
+  direccion: { type: String, required: true },
 });
+
+// --- NUEVO SUB-ESQUEMA PARA REDES SOCIALES ---
+const RedesSocialesSchema = new Schema(
+  {
+    nombre: {
+      type: String,
+      required: true,
+      enum: ["Instagram", "Facebook", "TikTok", "X", "Otro"], // Puedes ajustar las redes disponibles
+    },
+    enlace: {
+      type: String,
+      trim: true,
+    },
+    usuario: {
+      type: String,
+      trim: true,
+    },
+  },
+  { _id: false }
+); // _id: false para no generar IDs para cada red social
 
 const usuariosVendedoresSchema = new Schema(
   {
@@ -114,6 +121,7 @@ const usuariosVendedoresSchema = new Schema(
       required: true,
       unique: true,
       trim: true,
+      match: [/.+\@.+\..+/, "Por favor, introduce un email válido."],
     },
     password: {
       type: String,
@@ -175,6 +183,10 @@ const usuariosVendedoresSchema = new Schema(
       type: String,
     },
     datosPropietario: DatosPropietarioSchema,
+
+    // --- CAMPO DE REDES SOCIALES AÑADIDO ---
+    redes_sociales: [RedesSocialesSchema],
+
     pagos: [PagosSchema],
     activo: {
       type: Boolean,

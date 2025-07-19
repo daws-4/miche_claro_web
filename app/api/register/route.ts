@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from "next/server";
-import { connectDB } from "@/lib/db"; // Asegúrate de que la ruta sea correcta
+import {connectDB} from "@/lib/db"; // Asegúrate de que la ruta sea correcta
 import UsuariosVendedores from "@/models/usuariosVendedores"; // Asegúrate de que la ruta sea correcta
 import bcrypt from "bcryptjs";
 
@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     await connectDB();
     const body = await req.json();
 
-    // Valida que la contraseña exista
+    // Valida que la contraseña exista y no esté vacía
     if (!body.password || body.password.trim() === "") {
       return NextResponse.json(
         { success: false, error: "La contraseña es obligatoria." },
@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
     // El administrador lo activará después de la verificación y el pago.
     body.activo = false;
 
+    // Crear el nuevo usuario vendedor en la base de datos
     const nuevaSolicitud = await UsuariosVendedores.create(body);
 
     return NextResponse.json(
@@ -37,10 +38,14 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error: any) {
-    // Maneja errores de duplicados (email)
+    // Maneja errores de duplicados (ej. email o username)
     if (error.code === 11000) {
+      const field = Object.keys(error.keyValue)[0]; // Obtiene el campo que causó el error
       return NextResponse.json(
-        { success: false, error: "El correo electrónico ya está registrado." },
+        {
+          success: false,
+          error: `El ${field} '${error.keyValue[field]}' ya está registrado.`,
+        },
         { status: 409 }
       );
     }
@@ -52,8 +57,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Manejo de errores genéricos
     const errorMessage =
-      error instanceof Error ? error.message : "Ocurrió un error desconocido";
+      error instanceof Error
+        ? error.message
+        : "Ocurrió un error desconocido en el servidor.";
     return NextResponse.json(
       { success: false, error: errorMessage },
       { status: 500 }

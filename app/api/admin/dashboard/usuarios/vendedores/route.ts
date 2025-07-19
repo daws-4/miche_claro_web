@@ -1,13 +1,13 @@
 import { NextResponse, NextRequest } from "next/server";
-import {connectDB} from "@/lib/db";
-import usuariosVendedores from "@/models/usuariosVendedores"; 
+import { connectDB } from "@/lib/db";
+import usuariosVendedores from "@/models/usuariosVendedores";
 import bcrypt from "bcryptjs";
 
 // GET: Obtener todos los vendedores
 export async function GET() {
   try {
     await connectDB();
-    const vendedores = await usuariosVendedores.find({});
+    const vendedores = await usuariosVendedores.find({}).select("-password");
     return NextResponse.json(
       { success: true, data: vendedores },
       { status: 200 }
@@ -39,7 +39,18 @@ export async function POST(req: NextRequest) {
       { success: true, data: vendedor },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: any) {
+    // --- MANEJO DE ERROR DE DUPLICADOS ---
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyValue)[0];
+      return NextResponse.json(
+        {
+          success: false,
+          error: `El ${field} '${error.keyValue[field]}' ya está registrado.`,
+        },
+        { status: 409 } // 409 Conflict es un buen código de estado para esto
+      );
+    }
     const errorMessage =
       error instanceof Error ? error.message : "An unknown error occurred";
     return NextResponse.json(
@@ -65,12 +76,11 @@ export async function PUT(req: NextRequest) {
 
     const body = await req.json();
 
-    // Si se está actualizando la contraseña, hashearla
-    if (body.password) {
+    if (body.password && body.password.trim() !== "") {
       const salt = await bcrypt.genSalt(10);
       body.password = await bcrypt.hash(body.password, salt);
     } else {
-      delete body.password; // No enviar la contraseña si no se cambia
+      delete body.password;
     }
 
     const vendedor = await usuariosVendedores.findByIdAndUpdate(id, body, {
@@ -89,7 +99,18 @@ export async function PUT(req: NextRequest) {
       { success: true, data: vendedor },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: any) {
+    // --- MANEJO DE ERROR DE DUPLICADOS ---
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyValue)[0];
+      return NextResponse.json(
+        {
+          success: false,
+          error: `El ${field} '${error.keyValue[field]}' ya está registrado.`,
+        },
+        { status: 409 }
+      );
+    }
     const errorMessage =
       error instanceof Error ? error.message : "An unknown error occurred";
     return NextResponse.json(

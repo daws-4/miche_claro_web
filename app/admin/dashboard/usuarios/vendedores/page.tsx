@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Card, CardBody, Input, Button, Checkbox, Select, SelectItem, addToast, Link } from '@heroui/react';
+import { Card, CardBody, Input, Button, Checkbox, Select, SelectItem, addToast, Link, CardFooter, Divider } from '@heroui/react';
 import { EyeFilledIcon, EyeSlashFilledIcon } from "@/components/icons"; // Asume que tienes estos iconos
 import axios from 'axios';
 
@@ -164,11 +164,11 @@ const UsuarioFormModal = ({ isOpen, onClose, onSubmit, usuario, isEditMode }: Us
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
             <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                 <h2 className="text-2xl font-bold mb-4">{isEditMode ? 'Editar Vendedor' : 'Añadir Nuevo Vendedor'}</h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <fieldset className="p-4 border rounded-lg">
+                    <fieldset className="p-4 border rounded-lg border-gray-300">
                         <legend className="font-semibold px-2">Datos del Negocio</legend>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Input name="nombre" value={formData.nombre} onChange={handleChange} placeholder="Nombre del Negocio" className="w-full" required />
@@ -209,7 +209,7 @@ const UsuarioFormModal = ({ isOpen, onClose, onSubmit, usuario, isEditMode }: Us
                         </div>
                     </fieldset>
 
-                    <fieldset className="p-4 border rounded-lg">
+                    <fieldset className="p-4 border border-gray-300 rounded-lg">
                         <legend className="font-semibold px-2">Datos del Propietario</legend>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Input name="datosPropietario.nombre" value={formData.datosPropietario.nombre} onChange={handleChange} placeholder="Nombre del Propietario" className="w-full" required />
@@ -221,7 +221,7 @@ const UsuarioFormModal = ({ isOpen, onClose, onSubmit, usuario, isEditMode }: Us
                         </div>
                     </fieldset>
 
-                    <fieldset className="p-4 border rounded-lg">
+                    <fieldset className="p-4 border border-gray-300 rounded-lg">
                         <legend className="font-semibold px-2">Métodos de Pago</legend>
                         <h3 className="font-medium mb-2 text-sm text-gray-600">Pago Móvil</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -451,7 +451,7 @@ export default function GestionVendedoresPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {usuariosFiltrados.map(usuario => (
-                        <Card key={usuario._id} className="border rounded-xl shadow-sm flex flex-col">
+                        <Card key={usuario._id} className="border border-gray-400 rounded-xl shadow-sm flex flex-col">
                             <CardBody className="p-4 space-y-2 flex-grow">
                                 <div className="flex justify-between items-start">
                                     <Link key={usuario._id} href={`/admin/dashboard/usuarios/vendedores/${usuario._id}`}>
@@ -465,10 +465,11 @@ export default function GestionVendedoresPage() {
                                 <p className="text-sm text-gray-600">{usuario.email}</p>
                                 <p className="text-sm text-gray-500">{usuario.telefono1}</p>
                             </CardBody>
-                            <div className="p-4 border-t flex justify-end gap-2">
+                            <Divider/>
+                            <CardFooter className="p-4  flex justify-end gap-2">
                                 <Button onPress={() => handleEditar(usuario)} className="text-sm bg-orange-500 text-white">Editar</Button>
                                 <Button onPress={() => handleEliminar(usuario._id)} className="text-sm bg-red-600 text-white">Eliminar</Button>
-                            </div>
+                            </CardFooter>
                         </Card>
                     ))}
                 </div>

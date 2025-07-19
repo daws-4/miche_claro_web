@@ -2,7 +2,8 @@
 import { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import { Input } from "@heroui/react";
+import { Button, Input, addToast } from "@heroui/react";
+// import { addToast } from "@heroui/toast";
 import { EyeFilledIcon, EyeSlashFilledIcon } from "@/components/icons";
 
 export default function Login() {
@@ -23,6 +24,11 @@ export default function Login() {
             if(res.status === 200) {
                 console.log("Login exitoso", res.data);
                 router.push("/admin/dashboard");
+                addToast({
+                    title: "Éxito",
+                    description: "Has iniciado sesión correctamente.",
+                    color: "success",
+                });
             }
         } catch (err) {
             console.log("Fallo en el login", err);
@@ -30,8 +36,18 @@ export default function Login() {
             setError("Credenciales inválidas o error del servidor");
             if (axios.isAxiosError(err) && err.response) {
                 if (err.response.status === 401) {
+                    addToast({
+                        title: "Error",
+                        description: "Usuario o contraseña incorrectos.",
+                        color: "danger",
+                    });
                     setError("Usuario o contraseña incorrectos");
                 } else if (err.response.status === 400) {
+                    addToast({
+                        title: "Error",
+                        description: "Usuario no existe.",
+                        color: "danger",
+                    });
                     setError("Usuario no existe");
                 }
             }
@@ -80,13 +96,13 @@ export default function Login() {
                         type={isVisible ? "text" : "password"}
                         variant="bordered"
                     />
-                    <button
+                    <Button
                         type="submit"
                         disabled={loading}
                         className="w-full bg-[#003f63] text-white py-2 rounded-lg font-semibold hover:bg-[#002b48] transition"
                     >
                         {loading ? "Ingresando..." : "Ingresar"}
-                    </button>
+                    </Button>
                 </form>
             </div>
         </div>

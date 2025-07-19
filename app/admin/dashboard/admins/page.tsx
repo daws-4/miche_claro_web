@@ -77,7 +77,7 @@ const AdminFormModal = ({ isOpen, onClose, onSubmit, usuario, isEditMode }: Admi
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
             <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
                 <h2 className="text-2xl font-bold mb-4">{isEditMode ? 'Editar Administrador' : 'Añadir Nuevo Administrador'}</h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -211,7 +211,7 @@ export default function GestionAdminPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {adminsFiltrados.map(usuario => (
-                        <Card key={usuario._id} className="border rounded-xl shadow-sm">
+                        <Card key={usuario._id} className="border rounded-xl border-gray-300 shadow-sm">
                             <CardBody className="p-4 space-y-2">
                                 <div className="flex justify-between items-start">
                                     <h2 className="text-lg font-bold">{usuario.username}</h2>

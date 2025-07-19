@@ -143,7 +143,7 @@ export default function Dashboard() {
     }, [mesSeleccionado, regionSeleccionada, usuariosPorRegion]);
 
     const renderGrafico = (titulo: string, data: any[], barras: { key: string; fill: string; name: string }[]) => (
-        <div className="bg-white rounded-xl border mt-6 p-4">
+        <div className="bg-white rounded-xl border border-gray-400  mt-6 p-4">
             <h3 className="text-lg font-semibold text-black mb-2">{titulo}</h3>
             <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={data}>
@@ -182,7 +182,7 @@ export default function Dashboard() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {metricas.map(({ key, label, color, prefix, extraKey }) => (
-                    <Card key={key} className={`${color} text-white`}>
+                    <Card key={key} className={`${color} text-white `}>
                         <CardBody>
                             <p className="text-sm">{label}</p>
                             <h2 className="text-2xl font-bold">{prefix}{resumen[key]}</h2>

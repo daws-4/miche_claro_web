@@ -22,6 +22,12 @@ const bancosDeVenezuela = [
     "Banco Caroní", "Banco Plaza"
 ].map(banco => ({ key: banco, label: banco }));
 
+const tiposDeCuenta = [
+    { key: "Ahorros", label: "Ahorros" },
+    { key: "Corriente", label: "Corriente" },
+];
+
+
 // --- Tipos de Datos ---
 type DatosPagoMovil = { cedula_rif: string; telefono: string; banco: string; };
 type DatosBancolombia = { nequi?: string; numero_cuenta?: string; tipo_cuenta?: string; };
@@ -77,6 +83,11 @@ export default function RegistroVendedorPage() {
             setFormData(prev => ({ ...prev, estado: value }));
         } else if (name === 'banco') {
             setFormData(prev => ({ ...prev, datosPagoMovil: { ...prev.datosPagoMovil, banco: value } }));
+        } else if (name === 'tipo_cuenta') {
+            setFormData(prev => ({
+                ...prev,
+                datosBancolombia: { ...prev.datosBancolombia, tipo_cuenta: value }
+            }));
         }
     };
 
@@ -87,7 +98,6 @@ export default function RegistroVendedorPage() {
             const response = await axios.post('/api/register', formData);
             if (response.data.success) {
                 addToast({ title: "¡Solicitud Enviada!", description: response.data.message, color: "success" });
-                // Opcional: Redirigir a una página de "gracias" o al inicio
                 router.push('/');
             }
         } catch (error: any) {
@@ -119,7 +129,7 @@ export default function RegistroVendedorPage() {
 
                 {/* Formulario de Registro */}
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    <fieldset className="p-4 border rounded-lg">
+                    <fieldset className="p-4 border rounded-lg border-gray-300">
                         <legend className="font-semibold px-2 text-gray-700">Datos del Negocio</legend>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Input name="nombre" value={formData.nombre} onChange={handleChange} label="Nombre del Negocio" required />
@@ -143,7 +153,7 @@ export default function RegistroVendedorPage() {
                         </div>
                     </fieldset>
 
-                    <fieldset className="p-4 border rounded-lg">
+                    <fieldset className="p-4 border rounded-lg border-gray-300">
                         <legend className="font-semibold px-2 text-gray-700">Datos del Propietario</legend>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Input name="datosPropietario.nombre" value={formData.datosPropietario.nombre} onChange={handleChange} label="Nombre del Propietario" required />
@@ -155,7 +165,7 @@ export default function RegistroVendedorPage() {
                         </div>
                     </fieldset>
 
-                    <fieldset className="p-4 border rounded-lg">
+                    <fieldset className="p-4 border rounded-lg border-gray-300">
                         <legend className="font-semibold px-2 text-gray-700">Métodos de Pago (para recibir tus ganancias)</legend>
                         <h3 className="font-medium mb-2 text-sm text-gray-600">Pago Móvil</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -169,6 +179,17 @@ export default function RegistroVendedorPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Input name="datosBancolombia.nequi" value={formData.datosBancolombia?.nequi || ''} onChange={handleChange} label="Nequi" />
                             <Input name="datosBancolombia.numero_cuenta" value={formData.datosBancolombia?.numero_cuenta || ''} onChange={handleChange} label="Cuenta Bancolombia" />
+                            <Select
+                                label="Tipo de Cuenta"
+                                placeholder="Selecciona"
+                                selectedKeys={formData.datosBancolombia?.tipo_cuenta ? [formData.datosBancolombia.tipo_cuenta] : []}
+                                onSelectionChange={(keys) => handleSelectChange('tipo_cuenta', Array.from(keys)[0] as string)}
+                                className="w-full"
+                            >
+                                {tiposDeCuenta.map((cuenta) => (
+                                    <SelectItem key={cuenta.key}>{cuenta.label}</SelectItem>
+                                ))}
+                            </Select>
                             <Input name="datosZelle" value={formData.datosZelle || ''} onChange={handleChange} label="Email Zelle" className="md:col-span-2" />
                         </div>
                     </fieldset>
