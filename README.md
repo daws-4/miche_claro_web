@@ -74,8 +74,8 @@
  # Web: 
  - Autogestión de ingreso de usuarios vendedores (bodegas). [CRUD]
     - Ingreso de datos de usuario vendedor (bodega). [CRUD]
-        - Información fiscal, datos de contacto, ubicación, datos del negocio, datos del representante del negocio, método de pago, información del método de pago, etc...
-    - Inicio de Sesión del usuario vendedor(bodega)
+        - Información fiscal, datos de contacto, ubicación, datos del negocio, datos del representante del negocio, método de pago, información del método de pago, etc... -- TERMIANDO--
+    - Inicio de Sesión del usuario vendedor(bodega) -- TERMINADO--
     - Información Pública del negocio (bodega). [CRUD]
         - Información de la bodega, descripción, ubicación, horarios de atención, redes sociales,  etc...
         - Imágenes de la bodega.

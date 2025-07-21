@@ -4,79 +4,98 @@ import { jwtVerify } from "jose";
 
 const SECRET_KEY = process.env.SECRET_KEY;
 
+// --- Helper para verificar el token de Admin ---
+async function verifyAdminJWT(token: string) {
+  if (!SECRET_KEY) return null;
+  try {
+    const { payload } = await jwtVerify(
+      token,
+      new TextEncoder().encode(SECRET_KEY)
+    );
+    return payload as { _id: string; rol: number };
+  } catch (error) {
+    return null;
+  }
+}
+
+// --- Helper para verificar el token de Usuario ---
+async function verifyUserJWT(token: string) {
+  if (!SECRET_KEY) return null;
+  try {
+    const { payload } = await jwtVerify(
+      token,
+      new TextEncoder().encode(SECRET_KEY)
+    );
+    return payload as { _id: string; email: string; nombre: string };
+  } catch (error) {
+    return null;
+  }
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const adminToken = request.cookies.get("loginCookie")?.value;
+  const userToken = request.cookies.get("userSessionCookie")?.value;
 
-  // Function to verify the JWT token
-  const token = request.cookies.get("loginCookie")?.value;
-  async function verifyJWT(token: string) {
-    if (!SECRET_KEY) {
-      console.error("SECRET_KEY is not defined");
-      return null;
-    }
-    try {
-      const verified = await jwtVerify(
-        token,
-        new TextEncoder().encode(SECRET_KEY)
+  // --- Caso 1: Hay un token de Administrador ---
+  if (adminToken) {
+    const adminPayload = await verifyAdminJWT(adminToken);
+    if (adminPayload) {
+      // Si un admin logueado intenta ir a una página de login o al dashboard de usuario, redirigir a su dashboard
+      if (
+        pathname.startsWith("/login") ||
+        pathname.startsWith("/admin/login") ||
+        pathname.startsWith("/dashboard")
+      ) {
+        return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+      }
+      // Si un admin con rol < 5 intenta acceder a la gestión de admins, redirigir
+      if (
+        pathname.startsWith("/admin/dashboard/admin") &&
+        adminPayload.rol < 5
+      ) {
+        return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+      }
+      // Si es un admin válido, permitir el acceso a las rutas de admin
+      return NextResponse.next();
+    } else {
+      // Si el token de admin es inválido, borrarlo y redirigir
+      const response = NextResponse.redirect(
+        new URL("/admin/login", request.url)
       );
-      return verified.payload as {
-        username: string;
-        rol?: number;
-        estado?: string;
-        _id: string;
-      };
-    } catch (error) {
-      return null;
+      response.cookies.delete("loginCookie");
+      return response;
     }
   }
 
-  // If the user is NOT logged in, block protected routes
-  if (!token) {
-    if (
-      pathname.startsWith("/admin/dashboard") ||
-      pathname.startsWith("/dashboard")
-    ) {
-      return NextResponse.redirect(new URL("/", request.url));
+  // --- Caso 2: Hay un token de Usuario (y no de admin) ---
+  if (userToken) {
+    const userPayload = await verifyUserJWT(userToken);
+    if (userPayload) {
+      // Si un usuario logueado intenta ir a una página de admin o de login, redirigir a su dashboard
+      if (pathname.startsWith("/admin") || pathname.startsWith("/login")) {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
+      // Si es un usuario válido, permitir el acceso a las rutas de usuario
+      return NextResponse.next();
+    } else {
+      // Si el token de usuario es inválido, borrarlo y redirigir
+      const response = NextResponse.redirect(new URL("/login", request.url));
+      response.cookies.delete("userSessionCookie");
+      return response;
     }
-    return NextResponse.next();
   }
 
-  // If the user is logged in
-  const payload = await verifyJWT(token);
-
-  // If the token is invalid or expired
-  if (!payload) {
-    // Clear the invalid cookie and redirect
-    const response = NextResponse.redirect(new URL("/", request.url));
-    response.cookies.delete("loginCookie");
-    return response;
+  // --- Caso 3: No hay ningún token (Usuario no logueado) ---
+  // Si intenta acceder a cualquier ruta protegida, redirigir a la página de inicio
+  if (
+    pathname.startsWith("/admin/dashboard") ||
+    pathname.startsWith("/dashboard")
+  ) {
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // If the user is logged in but is NOT an admin (no role)
-  if (!payload.rol) {
-    if (pathname.startsWith("/admin")) {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
-    return NextResponse.next();
-  }
-
-  // If the user is an admin (has a role)
-  if (payload.rol) {
-    // --- NUEVA REGLA ---
-    // If the admin's role is less than 5, block access to the admin management page
-    if (pathname.startsWith("/admin/dashboard/admin") && payload.rol < 5) {
-      // Redirect them to the main dashboard or another appropriate page
-      return NextResponse.redirect(new URL("/admin/dashboard", request.url));
-    }
-
-    // Prevent logged-in admins from accessing login pages
-    if (pathname.startsWith("/admin/login") || pathname.startsWith("/login")) {
-      return NextResponse.redirect(new URL("/admin/dashboard", request.url));
-    }
-    return NextResponse.next();
-  }
-
-  // Default case if something unexpected happens
+  // Para cualquier otra ruta (ej. /login, /register), permitir el acceso
   return NextResponse.next();
 }
 

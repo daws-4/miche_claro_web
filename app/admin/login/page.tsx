@@ -68,14 +68,14 @@ export default function Login() {
                         onChange={(e) => setUsername(e.target.value)}
                         required
                         label='Usuario'
-                        className="w-full max-w-xs mx-auto"
+                        className="w-full"
                         labelPlacement="outside"
                         variant="bordered"
                     />
                     <Input
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full max-w-xs mx-auto"
+                        className="w-full"
                         labelPlacement="outside"
                         required
                         endContent={
