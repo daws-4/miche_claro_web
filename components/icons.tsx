@@ -442,3 +442,61 @@ export const AdminIcon = (props: any) => {
     </svg>
   )
 }
+export const PedidosIcon = (props: any) => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 32 32" // 1. ViewBox ajustado a las coordenadas
+      fill="none"
+      stroke="currentColor" // 2. Estilos aplicados directamente
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      height="2em"
+      width="2em"
+      {...props}
+    >
+      <line x1="9" y1="29" x2="23" y2="29" />
+      <path d="M13 23c0 2.1-.7 4.6-1.8 6" />
+      <path d="M20.8 29c-1.1-1.4-1.8-3.9-1.8-6" />
+      <path d="M13 18h5V7H3V6c0-1.1.9-2 2-2h22c1.1 0 2 .9 2 2v15c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2v-8" />
+      <circle cx="22" cy="18" r="2" />
+      <circle cx="11" cy="18" r="2" />
+      <polyline points="18 18 18 10 23 10 26 14 26 18 24 18" />
+      <line x1="4" y1="10" x2="13" y2="10" />
+      <line x1="2" y1="13" x2="11" y2="13" />
+      {/* 3. Rectángulo innecesario eliminado */}
+    </svg>
+  )
+}
+
+export const ItemsIcon = (props: any) => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 18" // ViewBox adjusted to the icon's actual size
+      fill="currentColor"   // Using fill as the icon is designed with solid shapes
+      height="2em"
+      width="2em"
+      {...props}
+    >
+      {/* The path data has been translated to start at (0,0) and fit the new viewBox */}
+      <path d="M1.575 12c-.87 0-1.575.672-1.575 1.5S.705 15 1.575 15c.87 0 1.575-.672 1.575-1.5S2.444 12 1.575 12zM5.25 15H21v-2H5.25v2zM1.575 6C.705 6 0 6.672 0 7.5S.705 9 1.575 9c.87 0 1.575-.672 1.575-1.5S2.444 6 1.575 6zM5.25 9H21V7H5.25v2zM1.575 0C.705 0 0 .672 0 1.5S.705 3 1.575 3c.87 0 1.575-.672 1.575-1.5S2.444 0 1.575 0zM5.25 3H21V1H5.25v2z" />
+    </svg>
+  );
+};
+
+export const TrashIcon = (props: any) => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 18" // ViewBox adjusted to the icon's actual size
+      fill="currentColor"   // Using fill as the icon is designed with solid shapes
+      height="2em"
+      width="2em"
+      {...props}
+    >
+<path d="M18 6L17.1991 18.0129C17.129 19.065 17.0939 19.5911 16.8667 19.99C16.6666 20.3412 16.3648 20.6235 16.0011 20.7998C15.588 21 15.0607 21 14.0062 21H9.99377C8.93927 21 8.41202 21 7.99889 20.7998C7.63517 20.6235 7.33339 20.3412 7.13332 19.99C6.90607 19.5911 6.871 19.065 6.80086 18.0129L6 6M4 6H20M16 6L15.7294 5.18807C15.4671 4.40125 15.3359 4.00784 15.0927 3.71698C14.8779 3.46013 14.6021 3.26132 14.2905 3.13878C13.9376 3 13.523 3 12.6936 3H11.3064C10.477 3 10.0624 3 9.70951 3.13878C9.39792 3.26132 9.12208 3.46013 8.90729 3.71698C8.66405 4.00784 8.53292 4.40125 8.27064 5.18807L8 6M14 10V17M10 10V17" stroke="#000000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+};

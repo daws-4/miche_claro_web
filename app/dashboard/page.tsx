@@ -35,7 +35,7 @@ export default function PedidosDashboard() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await axios.get('/api/dashboard/pedidos');
+                const response = await axios.get('/api/dashboard');
                 if (response.data.success) {
                     const data = response.data.data;
                     setMetricas(data.metricas);

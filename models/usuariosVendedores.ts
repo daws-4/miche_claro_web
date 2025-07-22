@@ -114,6 +114,27 @@ const RedesSocialesSchema = new Schema(
   { _id: false }
 ); // _id: false para no generar IDs para cada red social
 
+
+// --- NUEVO SUB-ESQUEMA PARA LA UBICACIÓN DE GOOGLE MAPS ---
+const UbicacionGoogleSchema = new Schema({
+    placeId: { type: String, trim: true },
+    enlace: { type: String, trim: true },
+    lat: { type: Number },
+    lng: { type: Number }
+}, { _id: false });
+
+// --- NUEVO SUB-ESQUEMA PARA EL HORARIO DE ATENCIÓN ---
+const HorarioSchema = new Schema({
+    dia: {
+        type: String,
+        required: true,
+        enum: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+    },
+    abre: { type: String, trim: true }, // Formato "HH:MM"
+    cierra: { type: String, trim: true }, // Formato "HH:MM"
+    abierto: { type: Boolean, default: false }
+}, { _id: false });
+
 const usuariosVendedoresSchema = new Schema(
   {
     email: {
@@ -197,6 +218,9 @@ const usuariosVendedoresSchema = new Schema(
       required: true,
       default: false,
     },
+    ubicacionGoogle: UbicacionGoogleSchema,
+    imagenes: [{ type: String }], // Arreglo de URLs de imágenes
+    horario: [HorarioSchema],
   },
   {
     timestamps: true,

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardBody, Link, Button } from "@heroui/react";
-import { Menu, Config, LogOutIcon, User, AdminIcon } from "@/components/icons"; // Asumo que tienes un icono 'Shield' o similar para Admin
+import { Menu, Config, LogOutIcon, PedidosIcon, ItemsIcon } from "@/components/icons"; // Asumo que tienes un icono 'Shield' o similar para Admin
 import { X } from "lucide-react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
@@ -25,12 +25,12 @@ const allMenuItems: MenuItem[] = [
     {
         titulo: "Pedidos",
         href: "/dashboard/pedidos",
-        Icon: <User />
+        Icon: <PedidosIcon />
     },
     {
         titulo: "Productos", 
         href: "/dashboard/productos", 
-        Icon: <AdminIcon />,
+        Icon: <ItemsIcon />,
         requiredRole: 5,
     },
     {
@@ -50,7 +50,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         try {
             const response = await axios.get("/api/auth/logout")
             if (response.status === 200) {
-                router.push("/admin/login"); // Redirige al login
+                router.push("/login"); // Redirige al login
             }
         } catch (error) {
             console.error("Error al cerrar sesión:", error);

@@ -1,0 +1,312 @@
+'use client';
+
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Input, Button, Select, SelectItem, addToast, Checkbox, Switch } from '@heroui/react';
+import { TrashIcon } from "@/components/icons"; // Asume que tienes un icono de basura
+import axios from 'axios';
+import { GoogleMap, LoadScript, Marker, Autocomplete } from '@react-google-maps/api';
+
+// --- Constantes y Tipos ---
+const diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+const redesSocialesDisponibles = ["Instagram", "Facebook", "TikTok", "X", "Otro"].map(r => ({ key: r, label: r }));
+
+// Coordenadas de las capitales de los estados de Venezuela para centrar el mapa
+const coordenadasCapitales: { [key: string]: { lat: number; lng: number } } = {
+    "Amazonas": { lat: 5.6667, lng: -67.6167 },
+    "Anzoátegui": { lat: 10.1333, lng: -64.7167 },
+    "Apure": { lat: 7.8833, lng: -67.4667 },
+    "Aragua": { lat: 10.25, lng: -67.6 },
+    "Barinas": { lat: 8.6333, lng: -70.2167 },
+    "Bolívar": { lat: 8.1167, lng: -63.55 },
+    "Carabobo": { lat: 10.2167, lng: -68 },
+    "Cojedes": { lat: 9.6667, lng: -68.5833 },
+    "Delta Amacuro": { lat: 9.05, lng: -62.0667 },
+    "Distrito Capital": { lat: 10.5, lng: -66.9167 },
+    "Falcón": { lat: 11.4, lng: -69.6667 },
+    "Guárico": { lat: 9.9167, lng: -67.35 },
+    "Lara": { lat: 10.0667, lng: -69.3167 },
+    "Mérida": { lat: 8.6, lng: -71.15 },
+    "Miranda": { lat: 10.25, lng: -66.5833 },
+    "Monagas": { lat: 9.75, lng: -63.1833 },
+    "Nueva Esparta": { lat: 10.9667, lng: -63.8833 },
+    "Portuguesa": { lat: 9.5667, lng: -69.2 },
+    "Sucre": { lat: 10.45, lng: -64.1833 },
+    "Táchira": { lat: 7.7667, lng: -72.2333 },
+    "Trujillo": { lat: 9.3667, lng: -70.4333 },
+    "Vargas": { lat: 10.6, lng: -66.9333 },
+    "Yaracuy": { lat: 10.3, lng: -68.7333 },
+    "Zulia": { lat: 10.6667, lng: -71.6167 },
+};
+
+type Horario = { dia: string; abre: string; cierra: string; abierto: boolean; };
+type RedSocial = { nombre: string; enlace?: string; usuario?: string; };
+type UbicacionGoogle = { placeId?: string; enlace?: string; lat?: number; lng?: number; };
+type VendedorData = {
+    nombre: string;
+    direccion: string;
+    estado: string;
+    telefono1: string;
+    telefono2?: string;
+    redes_sociales: RedSocial[];
+    horario: Horario[];
+    imagenes: string[];
+    ubicacionGoogle?: UbicacionGoogle;
+};
+
+const mapContainerStyle = {
+    height: '320px',
+    width: '100%',
+    borderRadius: '0.5rem'
+};
+
+const libraries: ("places")[] = ['places'];
+
+// --- Componente Principal ---
+export default function ConfiguracionVendedorPage() {
+    const [formData, setFormData] = useState<VendedorData | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+    const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+
+    const GOOGLEMAPS_APIKEY = process.env.NEXT_PUBLIC_GOOGLEMAPS_APIKEY;
+
+    const fetchVendedorData = useCallback(async () => {
+        try {
+            const response = await axios.get('/api/dashboard/config');
+            if (response.data.success) {
+                const data = response.data.data;
+                const horarioCompleto = diasSemana.map(dia => {
+                    const diaExistente = data.horario?.find((h: { dia: string; }) => h.dia === dia);
+                    return diaExistente || { dia, abre: '09:00', cierra: '17:00', abierto: false };
+                });
+                setFormData({ ...data, horario: horarioCompleto, redes_sociales: data.redes_sociales || [] });
+            }
+        } catch (error) {
+            addToast({ title: "Error", description: "No se pudieron cargar tus datos.", color: "danger" });
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchVendedorData();
+    }, [fetchVendedorData]);
+
+    const onLoadAutocomplete = (ac: google.maps.places.Autocomplete) => setAutocomplete(ac);
+
+    const onPlaceChanged = () => {
+        if (autocomplete) {
+            const place = autocomplete.getPlace();
+            const location = place.geometry?.location;
+            if (location) {
+                setFormData(prev => prev ? {
+                    ...prev,
+                    ubicacionGoogle: {
+                        placeId: place.place_id,
+                        enlace: place.url,
+                        lat: location.lat(),
+                        lng: location.lng(),
+                    }
+                } : null);
+            }
+        }
+    };
+
+    const onMarkerDragEnd = (e: google.maps.MapMouseEvent) => {
+        if (e.latLng) {
+            setFormData(prev => prev ? {
+                ...prev,
+                ubicacionGoogle: {
+                    ...prev.ubicacionGoogle,
+                    lat: e.latLng?.lat(),
+                    lng: e.latLng?.lng(),
+                }
+            } : null);
+        }
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        const nameParts = name.split('.');
+
+        setFormData(prev => {
+            if (!prev) return null;
+            let newFormData = { ...prev };
+
+            if (nameParts.length > 1) {
+                const [parentKey, index, childKey] = nameParts;
+                if (parentKey === 'redes_sociales' && newFormData.redes_sociales) {
+                    const socialIndex = parseInt(index, 10);
+                    const updatedSocials = [...newFormData.redes_sociales];
+                    updatedSocials[socialIndex] = { ...updatedSocials[socialIndex], [childKey]: value };
+                    return { ...newFormData, redes_sociales: updatedSocials };
+                }
+            }
+            return { ...newFormData, [name]: value };
+        });
+    };
+
+    const handleSelectChange = (name: string, value: string) => {
+        if (name.startsWith('red_social_nombre_')) {
+            const index = parseInt(name.split('_')[3], 10);
+            setFormData(prev => {
+                if (!prev) return null;
+                const updatedSocials = [...prev.redes_sociales];
+                updatedSocials[index].nombre = value;
+                return { ...prev, redes_sociales: updatedSocials };
+            });
+        }
+    };
+
+    const handleHorarioChange = (index: number, field: string, value: string | boolean) => {
+        setFormData(prev => {
+            if (!prev) return null;
+            const nuevoHorario = [...prev.horario];
+            (nuevoHorario[index] as any)[field] = value;
+            return { ...prev, horario: nuevoHorario };
+        });
+    };
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const fileArray = Array.from(e.target.files).map(file => URL.createObjectURL(file));
+            setFormData(prev => prev ? { ...prev, imagenes: [...prev.imagenes, ...fileArray] } : null);
+        }
+    };
+
+    const handleRemoveImage = (index: number) => {
+        setFormData(prev => prev ? { ...prev, imagenes: prev.imagenes.filter((_, i) => i !== index) } : null);
+    };
+
+    const handleAddSocial = () => {
+        setFormData(prev => prev ? {
+            ...prev,
+            redes_sociales: [...prev.redes_sociales, { nombre: 'Instagram', enlace: '', usuario: '' }]
+        } : null);
+    };
+
+    const handleRemoveSocial = (index: number) => {
+        setFormData(prev => prev ? {
+            ...prev,
+            redes_sociales: prev.redes_sociales.filter((_, i) => i !== index)
+        } : null);
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!formData) return;
+        setIsSaving(true);
+        try {
+            await axios.put('/api/vendedor/configuracion', formData);
+            addToast({ title: "Éxito", description: "Tu perfil ha sido actualizado.", color: "success" });
+        } catch (error) {
+            addToast({ title: "Error", description: "No se pudieron guardar los cambios.", color: "danger" });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    if (isLoading) return <div className="p-6 text-center">Cargando...</div>;
+    if (!formData) return <div className="p-6 text-center text-red-500">Error al cargar los datos.</div>;
+    if (!GOOGLEMAPS_APIKEY) return <div className="p-6 text-center text-orange-500">La clave de API de Google Maps no está configurada.</div>;
+
+    const center = {
+        lat: formData.ubicacionGoogle?.lat || coordenadasCapitales[formData.estado]?.lat || 9.0,
+        lng: formData.ubicacionGoogle?.lng || coordenadasCapitales[formData.estado]?.lng || -66.0,
+    };
+
+    return (
+        <div className="p-4 md:p-8 max-w-6xl mx-auto bg-white text-black">
+            <h1 className="text-3xl font-bold mb-8">Configuración de la Bodega</h1>
+            <form onSubmit={handleSubmit} className="space-y-8">
+
+                <fieldset className="p-4 border border-gray-300 rounded-lg">
+                    <legend className="font-semibold px-2">Información General</legend>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Input name="nombre" value={formData.nombre} onChange={handleChange} label="Nombre del Negocio" required />
+                        <Input name="telefono1" value={formData.telefono1} onChange={handleChange} label="Teléfono Principal" required />
+                        <Input name="telefono2" value={formData.telefono2 || ''} onChange={handleChange} label="Teléfono Secundario" />
+                        <Input name="direccion" value={formData.direccion} onChange={handleChange} label="Dirección" className="md:col-span-2" required />
+                    </div>
+                </fieldset>
+
+                <fieldset className="p-4 border border-gray-300 rounded-lg">
+                    <legend className="font-semibold px-2">Redes Sociales</legend>
+                    <div className="space-y-4">
+                        {formData.redes_sociales.map((red, index) => (
+                            <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end border-b pb-4">
+                                <Select label="Red Social" placeholder="Selecciona" selectedKeys={red.nombre ? [red.nombre] : []} onSelectionChange={(keys) => handleSelectChange(`red_social_nombre_${index}`, Array.from(keys)[0] as string)}>
+                                    {redesSocialesDisponibles.map(rs => <SelectItem key={rs.key}>{rs.label}</SelectItem>)}
+                                </Select>
+                                <Input name={`redes_sociales.${index}.usuario`} value={red.usuario || ''} onChange={handleChange} label="Usuario (ej. @usuario)" />
+                                <div className="flex items-end">
+                                    <Button type="button" onPress={() => handleRemoveSocial(index)} isIconOnly color="danger" aria-label="Eliminar red social">
+                                        <TrashIcon />
+                                    </Button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <Button type="button" onPress={handleAddSocial} className="w-full mt-4 bg-gray-200">Añadir Red Social</Button>
+                </fieldset>
+
+                <fieldset className="p-4 border border-gray-300 rounded-lg">
+                    <legend className="font-semibold px-2">Ubicación en Google Maps</legend>
+                    <p className="text-sm text-gray-500 mb-4">Busca tu negocio o arrastra el marcador a tu ubicación exacta.</p>
+                    <LoadScript
+                        googleMapsApiKey={GOOGLEMAPS_APIKEY}
+                        libraries={libraries}
+                    >
+                        <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={onPlaceChanged}>
+                            <Input placeholder="Buscar mi negocio en Google Maps..." className="mb-4" />
+                        </Autocomplete>
+                        <GoogleMap mapContainerStyle={mapContainerStyle} center={center} zoom={10}>
+                            <Marker position={center} draggable onDragEnd={onMarkerDragEnd} />
+                        </GoogleMap>
+                    </LoadScript>
+                </fieldset>
+
+                <fieldset className="p-4 border border-gray-300 rounded-lg">
+                    <legend className="font-semibold px-2">Horario de Atención</legend>
+                    <div className="space-y-3">
+                        {formData.horario.map((h, index) => (
+                            <div key={h.dia} className="grid grid-cols-4 gap-3 items-center">
+                                <span className="font-medium">{h.dia}</span>
+                                <Input type="time" value={h.abre} onChange={(e) => handleHorarioChange(index, 'abre', e.target.value)} disabled={!h.abierto} />
+                                <Input type="time" value={h.cierra} onChange={(e) => handleHorarioChange(index, 'cierra', e.target.value)} disabled={!h.abierto} />
+                                <div className="flex items-center gap-2">
+                                    <Switch isSelected={h.abierto} onValueChange={(v) => handleHorarioChange(index, 'abierto', v)} />
+                                    <span>{h.abierto ? 'Abierto' : 'Cerrado'}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </fieldset>
+
+                <fieldset className="p-4 border border-gray-300 rounded-lg">
+                    <legend className="font-semibold px-2">Galería de Imágenes</legend>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        {formData.imagenes.map((imgUrl, index) => (
+                            <div key={index} className="relative group">
+                                <img src={imgUrl} alt={`Imagen de la bodega ${index + 1}`} className="w-full h-32 object-cover rounded-md" />
+                                <Button isIconOnly color="danger" size="sm" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100" onPress={() => handleRemoveImage(index)}>
+                                    <TrashIcon />
+                                </Button>
+                            </div>
+                        ))}
+                        <label className="w-full h-32 border-2 border-dashed rounded-md flex items-center justify-center cursor-pointer hover:bg-gray-50">
+                            <span className="text-gray-500">+ Añadir</span>
+                            <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageUpload} />
+                        </label>
+                    </div>
+                </fieldset>
+
+                <div className="flex justify-end pt-4">
+                    <Button type="submit" className="bg-[#007D8A] text-white" isLoading={isSaving}>
+                        {isSaving ? "Guardando..." : "Guardar Cambios"}
+                    </Button>
+                </div>
+            </form>
+        </div>
+    );
+}

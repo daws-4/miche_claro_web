@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
 
     // Si todo es correcto, crea el token JWT
     const token = await new SignJWT({
-      _id: user._id,
+      _id: user._id.toString(),
       email: user.email,
       nombre: user.nombre,
     })

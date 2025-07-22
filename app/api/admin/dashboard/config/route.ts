@@ -22,7 +22,6 @@ const getAdminIdFromSession = async (
   console.log("Token de sesión:", token);
   console.log("Clave secreta:", SECRET_KEY);
   if (!token) {
-    console.log("xd")
     return null; // No hay token, por lo tanto no hay sesión
   }
 
