@@ -1,18 +1,20 @@
 import { NextResponse, NextRequest } from "next/server";
-import { connectDB } from "@/lib/db"; // Asegúrate de que la ruta sea correcta
-import UsuariosVendedores from "@/models/usuariosVendedores"; // Asegúrate de que la ruta sea correcta
 import { jwtVerify } from "jose";
 import mongoose from "mongoose";
+
+import { connectDB } from "@/lib/db"; // Asegúrate de que la ruta sea correcta
+import UsuariosVendedores from "@/models/usuariosVendedores"; // Asegúrate de que la ruta sea correcta
 
 // La SECRET_KEY debe estar definida en tus variables de entorno (.env.local)
 const SECRET_KEY = process.env.SECRET_KEY;
 
 // --- Helper para obtener el ID del vendedor desde la cookie de sesión ---
 const getVendedorIdFromSession = async (
-  req: NextRequest
+  req: NextRequest,
 ): Promise<string | null> => {
   if (!SECRET_KEY) {
     console.error("La clave secreta de JWT no está definida.");
+
     return null;
   }
 
@@ -27,7 +29,7 @@ const getVendedorIdFromSession = async (
     // Verifica el token usando la clave secreta
     const { payload } = await jwtVerify(
       token,
-      new TextEncoder().encode(SECRET_KEY)
+      new TextEncoder().encode(SECRET_KEY),
     );
 
     // --- CORRECCIÓN ---
@@ -47,14 +49,17 @@ const getVendedorIdFromSession = async (
       idFromPayload.buffer
     ) {
       const byteArray = Object.values(idFromPayload.buffer) as number[];
+
       return Buffer.from(byteArray).toString("hex");
     }
 
     // Si el formato no es reconocido, se considera inválido.
     console.error("Formato de ID en token inválido:", idFromPayload);
+
     return null;
   } catch (error) {
     console.error("Error en la verificación del JWT del vendedor:", error);
+
     return null;
   }
 };
@@ -68,14 +73,14 @@ export async function GET(req: NextRequest) {
     if (!vendedorId) {
       return NextResponse.json(
         { success: false, error: "No autenticado" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     if (!mongoose.Types.ObjectId.isValid(vendedorId)) {
       return NextResponse.json(
         { success: false, error: "ID de sesión inválido" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -85,20 +90,21 @@ export async function GET(req: NextRequest) {
     if (!vendedor) {
       return NextResponse.json(
         { success: false, error: "Vendedor no encontrado" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     return NextResponse.json(
       { success: true, data: vendedor },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Ocurrió un error desconocido";
+
     return NextResponse.json(
       { success: false, error: errorMessage },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -112,14 +118,14 @@ export async function PUT(req: NextRequest) {
     if (!vendedorId) {
       return NextResponse.json(
         { success: false, error: "No autenticado" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     if (!mongoose.Types.ObjectId.isValid(vendedorId)) {
       return NextResponse.json(
         { success: false, error: "ID de sesión inválido" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -137,26 +143,27 @@ export async function PUT(req: NextRequest) {
       {
         new: true,
         runValidators: true,
-      }
+      },
     ).select("-password");
 
     if (!updatedVendedor) {
       return NextResponse.json(
         { success: false, error: "Vendedor no encontrado" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     return NextResponse.json(
       { success: true, data: updatedVendedor },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error: any) {
     const errorMessage =
       error instanceof Error ? error.message : "Ocurrió un error desconocido";
+
     return NextResponse.json(
       { success: false, error: errorMessage },
-      { status: 400 }
+      { status: 400 },
     );
   }
 }

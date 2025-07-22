@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     if (!adminToken && !userToken) {
       return NextResponse.json(
         { message: "User is not logged in" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -25,10 +25,11 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(
       { message: "Logged out successfully" },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error: any) {
     console.error("Logout error:", error);
+
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }

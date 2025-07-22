@@ -111,7 +111,7 @@ const RedesSocialesSchema = new Schema(
       trim: true,
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 // --- SUB-ESQUEMA DE UBICACIÓN ACTUALIZADO ---
@@ -124,7 +124,7 @@ const UbicacionGoogleSchema = new Schema(
     lat: { type: Number },
     lng: { type: Number },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const HorarioSchema = new Schema(
@@ -146,7 +146,7 @@ const HorarioSchema = new Schema(
     cierra: { type: String, trim: true },
     abierto: { type: Boolean, default: false },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const usuariosVendedoresSchema = new Schema(
@@ -235,7 +235,7 @@ const usuariosVendedoresSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default models.UsuariosVendedores ||

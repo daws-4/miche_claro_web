@@ -36,7 +36,7 @@ const productosSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default models.Productos || model("Productos", productosSchema);

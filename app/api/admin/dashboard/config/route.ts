@@ -1,24 +1,27 @@
 import { NextResponse, NextRequest } from "next/server";
-import { connectDB } from "@/lib/db"; // Asegúrate de que la ruta sea correcta
-import Administradores from "@/models/administradores"; // Asegúrate de que la ruta sea correcta
 import bcrypt from "bcryptjs";
 import { jwtVerify } from "jose";
+
+import { connectDB } from "@/lib/db"; // Asegúrate de que la ruta sea correcta
+import Administradores from "@/models/administradores"; // Asegúrate de que la ruta sea correcta
 
 // La SECRET_KEY debe estar definida en tus variables de entorno (.env.local)
 const SECRET_KEY = process.env.SECRET_KEY;
 
 // Reemplaza la función de ejemplo con una verificación de JWT real
 const getAdminIdFromSession = async (
-  req: NextRequest
+  req: NextRequest,
 ): Promise<string | null> => {
   // Verifica que la clave secreta esté definida
   if (!SECRET_KEY) {
     console.error("La clave secreta de JWT no está definida.");
+
     return null;
   }
 
   // Obtiene el token de la cookie de la petición
   const token = req.cookies.get("loginCookie")?.value;
+
   console.log("Token de sesión:", token);
   console.log("Clave secreta:", SECRET_KEY);
   if (!token) {
@@ -29,13 +32,16 @@ const getAdminIdFromSession = async (
     // Verifica el token usando la clave secreta
     const { payload } = await jwtVerify(
       token,
-      new TextEncoder().encode(SECRET_KEY)
+      new TextEncoder().encode(SECRET_KEY),
     );
+
     console.log("Payload del token:", payload);
+
     // Asume que el payload del token contiene el ID del admin como `_id`
     return payload._id as string;
   } catch (error) {
     console.error("Error en la verificación del JWT:", error);
+
     return null;
   }
 };
@@ -45,11 +51,12 @@ export async function GET(req: NextRequest) {
   try {
     await connectDB();
     const adminId = await getAdminIdFromSession(req);
+
     console.log("Admin ID:", adminId);
     if (!adminId) {
       return NextResponse.json(
         { success: false, error: "No autenticado" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -58,7 +65,7 @@ export async function GET(req: NextRequest) {
     if (!admin) {
       return NextResponse.json(
         { success: false, error: "Administrador no encontrado" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -66,9 +73,10 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Ocurrió un error desconocido";
+
     return NextResponse.json(
       { success: false, error: errorMessage },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -82,15 +90,16 @@ export async function PUT(req: NextRequest) {
     if (!adminId) {
       return NextResponse.json(
         { success: false, error: "No autenticado" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     const currentAdmin = await Administradores.findById(adminId);
+
     if (!currentAdmin) {
       return NextResponse.json(
         { success: false, error: "Administrador no encontrado" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -99,6 +108,7 @@ export async function PUT(req: NextRequest) {
     // Si se envía una nueva contraseña, hashearla.
     if (body.password && body.password.trim() !== "") {
       const salt = await bcrypt.genSalt(10);
+
       body.password = await bcrypt.hash(body.password, salt);
     } else {
       delete body.password; // No actualizar la contraseña si el campo está vacío
@@ -115,25 +125,26 @@ export async function PUT(req: NextRequest) {
       {
         new: true,
         runValidators: true,
-      }
+      },
     ).select("-password");
 
     return NextResponse.json(
       { success: true, data: updatedAdmin },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error: any) {
     if (error.code === 11000) {
       return NextResponse.json(
         { success: false, error: "El email o nombre de usuario ya existe." },
-        { status: 409 }
+        { status: 409 },
       );
     }
     const errorMessage =
       error instanceof Error ? error.message : "Ocurrió un error desconocido";
+
     return NextResponse.json(
       { success: false, error: errorMessage },
-      { status: 400 }
+      { status: 400 },
     );
   }
 }

@@ -33,7 +33,7 @@ const pedidosSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default models.Pedidos || model("Pedidos", pedidosSchema);

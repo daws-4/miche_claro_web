@@ -1,9 +1,10 @@
 import { NextResponse, NextRequest } from "next/server";
-import {connectDB} from "@/lib/db"; 
-import UsuariosVendedores from "@/models/usuariosVendedores";
 import bcrypt from "bcryptjs";
 import { SignJWT } from "jose";
 import { cookies } from "next/headers";
+
+import UsuariosVendedores from "@/models/usuariosVendedores";
+import { connectDB } from "@/lib/db";
 
 const SECRET_KEY = process.env.SECRET_KEY;
 
@@ -20,17 +21,19 @@ export async function POST(req: NextRequest) {
     if (!email || !password) {
       return NextResponse.json(
         { success: false, error: "Email y contraseña son obligatorios." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Busca al usuario por su email y se asegura de incluir la contraseña en el resultado
-    const user = await UsuariosVendedores.findOne({ email }).select("+password");
+    const user = await UsuariosVendedores.findOne({ email }).select(
+      "+password",
+    );
 
     if (!user) {
       return NextResponse.json(
         { success: false, error: "El usuario no existe." },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -40,7 +43,7 @@ export async function POST(req: NextRequest) {
     if (!isMatch) {
       return NextResponse.json(
         { success: false, error: "Contraseña incorrecta." },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -56,9 +59,10 @@ export async function POST(req: NextRequest) {
       .sign(new TextEncoder().encode(SECRET_KEY));
 
     // Guarda el token en una cookie segura
-    (await
-      // Guarda el token en una cookie segura
-      cookies()).set({
+    (
+      await // Guarda el token en una cookie segura
+      cookies()
+    ).set({
       name: "userSessionCookie",
       value: token,
       httpOnly: true,
@@ -70,14 +74,15 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(
       { success: true, message: "Inicio de sesión exitoso." },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error: any) {
     const errorMessage =
       error instanceof Error ? error.message : "Ocurrió un error desconocido.";
+
     return NextResponse.json(
       { success: false, error: errorMessage },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

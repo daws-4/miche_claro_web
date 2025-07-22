@@ -55,7 +55,7 @@ const usuariosSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default models.Usuarios || model("Usuarios", usuariosSchema);

@@ -19,13 +19,13 @@ const promocionesSchema = new Schema(
       required: [true, "El precio promocionado es requerido"],
     },
     status_promocion: {
-        type: Boolean,
-        default: false,
-    }
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default models.Promociones || model("Promociones", promocionesSchema);

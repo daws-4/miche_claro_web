@@ -2,7 +2,8 @@
 
 import { NextResponse } from "next/server";
 import { Types } from "mongoose";
-import {connectDB} from "@/lib/db";
+
+import { connectDB } from "@/lib/db";
 import UsuariosVendedores from "@/models/usuariosVendedores";
 import UsuariosDelivery from "@/models/usuariosDelivery";
 
@@ -40,7 +41,7 @@ export async function GET() {
         dineroGenerado:
           v.pagos?.reduce(
             (acc, pago) => acc + (pago.monto_cancelado || 0),
-            0
+            0,
           ) || 0,
       }))
       .sort((a, b) => b.dineroGenerado - a.dineroGenerado);
@@ -69,14 +70,15 @@ export async function GET() {
 
     return NextResponse.json(
       { success: true, data: responseData },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "An unknown error occurred";
+
     return NextResponse.json(
       { success: false, error: errorMessage },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

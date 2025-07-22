@@ -1,31 +1,36 @@
 import { NextResponse, NextRequest } from "next/server";
-import {connectDB} from "@/lib/db";
-import UsuariosDelivery from "@/models/usuariosDelivery"; // Ajusta la ruta a tu modelo
 import bcrypt from "bcryptjs";
+
+import { connectDB } from "@/lib/db";
+import UsuariosDelivery from "@/models/usuariosDelivery"; // Ajusta la ruta a tu modelo
 
 // GET: Obtener todos los repartidores
 export async function GET() {
   try {
     await connectDB();
     const deliveryUsers = await UsuariosDelivery.find({});
+
     if (!deliveryUsers || deliveryUsers.length === 0) {
-        console.log(deliveryUsers);
+      console.log(deliveryUsers);
+
       return NextResponse.json(
         { success: false, error: "No se encontraron repartidores" },
-        { status: 404 }
+        { status: 404 },
       );
     }
+
     return NextResponse.json(
       { success: true, data: deliveryUsers },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
-    console.log(error)
+    console.log(error);
     const errorMessage =
       error instanceof Error ? error.message : "Ocurrió un error desconocido";
+
     return NextResponse.json(
       { success: false, error: errorMessage },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -39,11 +44,12 @@ export async function POST(req: NextRequest) {
     // Hashear la contraseña antes de guardarla
     if (body.password) {
       const salt = await bcrypt.genSalt(10);
+
       body.password = await bcrypt.hash(body.password, salt);
     } else {
       return NextResponse.json(
         { success: false, error: "La contraseña es obligatoria" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -52,22 +58,24 @@ export async function POST(req: NextRequest) {
     delete body.estado_operativo;
 
     const deliveryUser = await UsuariosDelivery.create(body);
+
     return NextResponse.json(
       { success: true, data: deliveryUser },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error: any) {
     if (error.code === 11000) {
       return NextResponse.json(
         { success: false, error: "El email o la cédula ya existen." },
-        { status: 409 }
+        { status: 409 },
       );
     }
     const errorMessage =
       error instanceof Error ? error.message : "Ocurrió un error desconocido";
+
     return NextResponse.json(
       { success: false, error: errorMessage },
-      { status: 400 }
+      { status: 400 },
     );
   }
 }
@@ -82,7 +90,7 @@ export async function PUT(req: NextRequest) {
     if (!id) {
       return NextResponse.json(
         { success: false, error: "ID no proporcionado" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -90,6 +98,7 @@ export async function PUT(req: NextRequest) {
 
     if (body.password) {
       const salt = await bcrypt.genSalt(10);
+
       body.password = await bcrypt.hash(body.password, salt);
     } else {
       delete body.password;
@@ -107,20 +116,21 @@ export async function PUT(req: NextRequest) {
     if (!deliveryUser) {
       return NextResponse.json(
         { success: false, error: "Repartidor no encontrado" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     return NextResponse.json(
       { success: true, data: deliveryUser },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Ocurrió un error desconocido";
+
     return NextResponse.json(
       { success: false, error: errorMessage },
-      { status: 400 }
+      { status: 400 },
     );
   }
 }
@@ -135,7 +145,7 @@ export async function DELETE(req: NextRequest) {
     if (!id) {
       return NextResponse.json(
         { success: false, error: "ID no proporcionado" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -144,7 +154,7 @@ export async function DELETE(req: NextRequest) {
     if (!deletedUser) {
       return NextResponse.json(
         { success: false, error: "Repartidor no encontrado" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -152,9 +162,10 @@ export async function DELETE(req: NextRequest) {
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Ocurrió un error desconocido";
+
     return NextResponse.json(
       { success: false, error: errorMessage },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

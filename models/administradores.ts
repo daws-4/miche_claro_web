@@ -65,7 +65,7 @@ const administradoresSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default models.administradores ||

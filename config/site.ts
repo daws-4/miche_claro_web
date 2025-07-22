@@ -2,7 +2,8 @@ export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
   name: "Miche Claro",
-  description: "La mejor alternativa para comprar y vender alcohol online en Venezuela.",
+  description:
+    "La mejor alternativa para comprar y vender alcohol online en Venezuela.",
   navItems: [
     {
       label: "Inicio",

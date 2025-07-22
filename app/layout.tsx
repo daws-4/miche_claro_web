@@ -2,9 +2,10 @@ import "@/styles/globals.css";
 import { Metadata, Viewport } from "next";
 import clsx from "clsx";
 
+import { Providers } from "./providers";
+
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
-import { Providers } from "./providers";
 export const metadata: Metadata = {
   title: {
     default: siteConfig.name,
@@ -37,9 +38,7 @@ export default function RootLayout({
           fontSans.variable,
         )}
       >
-        <Providers>
-          {children}
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

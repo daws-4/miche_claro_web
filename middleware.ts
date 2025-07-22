@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+
+import { NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
 const SECRET_KEY = process.env.SECRET_KEY;
@@ -10,8 +11,9 @@ async function verifyAdminJWT(token: string) {
   try {
     const { payload } = await jwtVerify(
       token,
-      new TextEncoder().encode(SECRET_KEY)
+      new TextEncoder().encode(SECRET_KEY),
     );
+
     return payload as { _id: string; rol: number };
   } catch (error) {
     return null;
@@ -24,8 +26,9 @@ async function verifyUserJWT(token: string) {
   try {
     const { payload } = await jwtVerify(
       token,
-      new TextEncoder().encode(SECRET_KEY)
+      new TextEncoder().encode(SECRET_KEY),
     );
+
     return payload as { _id: string; email: string; nombre: string };
   } catch (error) {
     return null;
@@ -40,6 +43,7 @@ export async function middleware(request: NextRequest) {
   // --- Caso 1: Hay un token de Administrador ---
   if (adminToken) {
     const adminPayload = await verifyAdminJWT(adminToken);
+
     if (adminPayload) {
       // Si un admin logueado intenta ir a una página de login o al dashboard de usuario, redirigir a su dashboard
       if (
@@ -56,14 +60,17 @@ export async function middleware(request: NextRequest) {
       ) {
         return NextResponse.redirect(new URL("/admin/dashboard", request.url));
       }
+
       // Si es un admin válido, permitir el acceso a las rutas de admin
       return NextResponse.next();
     } else {
       // Si el token de admin es inválido, borrarlo y redirigir
       const response = NextResponse.redirect(
-        new URL("/admin/login", request.url)
+        new URL("/admin/login", request.url),
       );
+
       response.cookies.delete("loginCookie");
+
       return response;
     }
   }
@@ -71,17 +78,21 @@ export async function middleware(request: NextRequest) {
   // --- Caso 2: Hay un token de Usuario (y no de admin) ---
   if (userToken) {
     const userPayload = await verifyUserJWT(userToken);
+
     if (userPayload) {
       // Si un usuario logueado intenta ir a una página de admin o de login, redirigir a su dashboard
       if (pathname.startsWith("/admin") || pathname.startsWith("/login")) {
         return NextResponse.redirect(new URL("/dashboard", request.url));
       }
+
       // Si es un usuario válido, permitir el acceso a las rutas de usuario
       return NextResponse.next();
     } else {
       // Si el token de usuario es inválido, borrarlo y redirigir
       const response = NextResponse.redirect(new URL("/login", request.url));
+
       response.cookies.delete("userSessionCookie");
+
       return response;
     }
   }

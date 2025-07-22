@@ -23,7 +23,7 @@ const combosSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default models.Combos || model("Combos", combosSchema);

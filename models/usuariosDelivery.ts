@@ -154,7 +154,7 @@ const usuariosDeliverySchema = new Schema(
   },
   {
     timestamps: true, // Añade createdAt y updatedAt automáticamente
-  }
+  },
 );
 
 // Índice geoespacial para consultas de ubicación

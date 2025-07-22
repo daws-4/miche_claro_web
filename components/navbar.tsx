@@ -1,39 +1,33 @@
 import {
   Navbar as HeroUINavbar,
   NavbarContent,
-  NavbarMenu,
   NavbarMenuToggle,
   NavbarBrand,
   NavbarItem,
-  NavbarMenuItem,
 } from "@heroui/navbar";
-import { Button } from "@heroui/button";
-import { Kbd } from "@heroui/kbd";
 import { Link } from "@heroui/link";
-import { Input } from "@heroui/input";
 import { link as linkStyles } from "@heroui/theme";
 import NextLink from "next/link";
 import clsx from "clsx";
 
 import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
-import {
-  TwitterIcon,
-  GithubIcon,
-  DiscordIcon,
-  HeartFilledIcon,
-  SearchIcon,
-  Logo,
-} from "@/components/icons";
+import { TwitterIcon, GithubIcon, DiscordIcon } from "@/components/icons";
 import { LogoImage } from "@/components/images";
 
 export const Navbar = () => {
-
   return (
-    <HeroUINavbar maxWidth="xl" position="sticky" className='bg-gradient-to-tr from-azul1 to-sky-600 pb-4'>
+    <HeroUINavbar
+      className="bg-gradient-to-tr from-azul1 to-sky-600 pb-4"
+      maxWidth="xl"
+      position="sticky"
+    >
       <NavbarContent className="basis-1/5 sm:basis-full mt-4 " justify="start">
         <NavbarBrand as="li" className="gap-3 max-w-fit">
-          <NextLink className="flex justify-start items-center gap-1" href="/home">
+          <NextLink
+            className="flex justify-start items-center gap-1"
+            href="/home"
+          >
             <LogoImage height={40} width={40} />
             <p className="font-bold text-inherit">MICHE CLARO</p>
           </NextLink>
@@ -72,7 +66,6 @@ export const Navbar = () => {
           </Link>
           <ThemeSwitch />
         </NavbarItem>
-       
       </NavbarContent>
 
       <NavbarContent className="sm:hidden basis-1 pl-4" justify="end">
@@ -82,7 +75,6 @@ export const Navbar = () => {
         <ThemeSwitch />
         <NavbarMenuToggle />
       </NavbarContent>
-
     </HeroUINavbar>
   );
 };

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import {connectDB} from "@/lib/db"; // Asegúrate de que la ruta sea correcta
+
+import { connectDB } from "@/lib/db"; // Asegúrate de que la ruta sea correcta
 import Pedidos from "@/models/pedidos"; // Asegúrate de que la ruta a tu modelo sea correcta
 
 export async function GET() {
@@ -95,9 +96,10 @@ export async function GET() {
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Ocurrió un error desconocido";
+
     return NextResponse.json(
       { success: false, error: errorMessage },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
