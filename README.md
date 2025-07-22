@@ -72,16 +72,16 @@
       
 
  # Web: 
- - Autogestión de ingreso de usuarios vendedores (bodegas). [CRUD]
+ - Autogestión de ingreso de usuarios vendedores (bodegas). [CRUD] --TERMINADO--
     - Ingreso de datos de usuario vendedor (bodega). [CRUD]
         - Información fiscal, datos de contacto, ubicación, datos del negocio, datos del representante del negocio, método de pago, información del método de pago, etc... -- TERMIANDO--
     - Inicio de Sesión del usuario vendedor(bodega) -- TERMINADO--
     - Información Pública del negocio (bodega). [CRUD]
-        - Información de la bodega, descripción, ubicación, horarios de atención, redes sociales,  etc...
+        - Información de la bodega, descripción, ubicación, horarios de atención, redes sociales,  etc... --TERMINADO--
         - Imágenes de la bodega.
         - Lista de productos, descripción, precio, imagen, etc...
         - Lista de Combos, descripción, precio, imagen y productos incluidos etc...
-        - Métodos de pago aceptados por el negocio (Efectivo, BsD, Bancolombia, Zelle, Zinli, etc...)
+        - Métodos de pago aceptados por el negocio (Efectivo, BsD, Bancolombia, Zelle, Zinli, etc...) --TERMINADO--
     - Estado de cuenta del usuario vendedor  [GET]  
         - Total dinero generado en ventas
         - Total dinero pagado en impuestos ??
