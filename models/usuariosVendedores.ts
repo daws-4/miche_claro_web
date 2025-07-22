@@ -1,5 +1,6 @@
 import { Schema, model, models } from "mongoose";
 
+// --- Sub-esquemas existentes (sin cambios) ---
 export const PagosSchema = new Schema({
   mes: {
     type: String,
@@ -94,13 +95,12 @@ const DatosPropietarioSchema = new Schema({
   direccion: { type: String, required: true },
 });
 
-// --- NUEVO SUB-ESQUEMA PARA REDES SOCIALES ---
 const RedesSocialesSchema = new Schema(
   {
     nombre: {
       type: String,
       required: true,
-      enum: ["Instagram", "Facebook", "TikTok", "X", "Otro"], // Puedes ajustar las redes disponibles
+      enum: ["Instagram", "Facebook", "TikTok", "X", "Otro"],
     },
     enlace: {
       type: String,
@@ -112,28 +112,42 @@ const RedesSocialesSchema = new Schema(
     },
   },
   { _id: false }
-); // _id: false para no generar IDs para cada red social
+);
 
-
-// --- NUEVO SUB-ESQUEMA PARA LA UBICACIÓN DE GOOGLE MAPS ---
-const UbicacionGoogleSchema = new Schema({
+// --- SUB-ESQUEMA DE UBICACIÓN ACTUALIZADO ---
+const UbicacionGoogleSchema = new Schema(
+  {
     placeId: { type: String, trim: true },
+    nombre: { type: String, trim: true }, // Nuevo: para placeName
+    direccionFormateada: { type: String, trim: true }, // Nuevo: para placeAddress
     enlace: { type: String, trim: true },
     lat: { type: Number },
-    lng: { type: Number }
-}, { _id: false });
+    lng: { type: Number },
+  },
+  { _id: false }
+);
 
-// --- NUEVO SUB-ESQUEMA PARA EL HORARIO DE ATENCIÓN ---
-const HorarioSchema = new Schema({
+const HorarioSchema = new Schema(
+  {
     dia: {
-        type: String,
-        required: true,
-        enum: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+      type: String,
+      required: true,
+      enum: [
+        "Lunes",
+        "Martes",
+        "Miércoles",
+        "Jueves",
+        "Viernes",
+        "Sábado",
+        "Domingo",
+      ],
     },
-    abre: { type: String, trim: true }, // Formato "HH:MM"
-    cierra: { type: String, trim: true }, // Formato "HH:MM"
-    abierto: { type: Boolean, default: false }
-}, { _id: false });
+    abre: { type: String, trim: true },
+    cierra: { type: String, trim: true },
+    abierto: { type: Boolean, default: false },
+  },
+  { _id: false }
+);
 
 const usuariosVendedoresSchema = new Schema(
   {
@@ -204,10 +218,7 @@ const usuariosVendedoresSchema = new Schema(
       type: String,
     },
     datosPropietario: DatosPropietarioSchema,
-
-    // --- CAMPO DE REDES SOCIALES AÑADIDO ---
     redes_sociales: [RedesSocialesSchema],
-
     pagos: [PagosSchema],
     activo: {
       type: Boolean,
@@ -219,7 +230,7 @@ const usuariosVendedoresSchema = new Schema(
       default: false,
     },
     ubicacionGoogle: UbicacionGoogleSchema,
-    imagenes: [{ type: String }], // Arreglo de URLs de imágenes
+    imagenes: [{ type: String }],
     horario: [HorarioSchema],
   },
   {

@@ -4,13 +4,13 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Input, Button, Select, SelectItem, addToast, Checkbox, Switch } from '@heroui/react';
 import { TrashIcon } from "@/components/icons"; // Asume que tienes un icono de basura
 import axios from 'axios';
-import { GoogleMap, LoadScript, Marker, Autocomplete } from '@react-google-maps/api';
+import { APIProvider, Map, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
+import { stringify } from 'querystring';
 
 // --- Constantes y Tipos ---
 const diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const redesSocialesDisponibles = ["Instagram", "Facebook", "TikTok", "X", "Otro"].map(r => ({ key: r, label: r }));
 
-// Coordenadas de las capitales de los estados de Venezuela para centrar el mapa
 const coordenadasCapitales: { [key: string]: { lat: number; lng: number } } = {
     "Amazonas": { lat: 5.6667, lng: -67.6167 },
     "Anzoátegui": { lat: 10.1333, lng: -64.7167 },
@@ -40,7 +40,14 @@ const coordenadasCapitales: { [key: string]: { lat: number; lng: number } } = {
 
 type Horario = { dia: string; abre: string; cierra: string; abierto: boolean; };
 type RedSocial = { nombre: string; enlace?: string; usuario?: string; };
-type UbicacionGoogle = { placeId?: string; enlace?: string; lat?: number; lng?: number; };
+type UbicacionGoogle = {
+    placeId?: string;
+    nombre?: string;
+    direccionFormateada?: string;
+    enlace?: string;
+    lat?: number;
+    lng?: number;
+};
 type VendedorData = {
     nombre: string;
     direccion: string;
@@ -53,21 +60,37 @@ type VendedorData = {
     ubicacionGoogle?: UbicacionGoogle;
 };
 
-const mapContainerStyle = {
-    height: '320px',
-    width: '100%',
-    borderRadius: '0.5rem'
-};
-
 const libraries: ("places")[] = ['places'];
+
+// --- Componente para la Búsqueda de Autocompletado ---
+const PlaceAutocomplete = ({ onPlaceSelect }: { onPlaceSelect: (place: google.maps.places.PlaceResult | null) => void }) => {
+    const inputRef = useRef<HTMLInputElement>(null);
+    const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+    const map = useMap();
+
+    useEffect(() => {
+        if (!map || !inputRef.current || autocomplete) return;
+
+        const ac = new google.maps.places.Autocomplete(inputRef.current, {
+            fields: ["geometry", "name", "place_id", "url", "formatted_address"]
+        });
+
+        setAutocomplete(ac);
+        ac.addListener('place_changed', () => {
+            onPlaceSelect(ac.getPlace());
+        });
+    }, [map, onPlaceSelect, autocomplete]);
+
+    return <Input ref={inputRef} placeholder="Buscar mi negocio en Google Maps..." className="mb-4" />;
+};
 
 // --- Componente Principal ---
 export default function ConfiguracionVendedorPage() {
     const [formData, setFormData] = useState<VendedorData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-    const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
-
+    const [useGooglePlace, setUseGooglePlace] = useState(true);
+    
     const GOOGLEMAPS_APIKEY = process.env.NEXT_PUBLIC_GOOGLEMAPS_APIKEY;
 
     const fetchVendedorData = useCallback(async () => {
@@ -92,34 +115,35 @@ export default function ConfiguracionVendedorPage() {
         fetchVendedorData();
     }, [fetchVendedorData]);
 
-    const onLoadAutocomplete = (ac: google.maps.places.Autocomplete) => setAutocomplete(ac);
-
-    const onPlaceChanged = () => {
-        if (autocomplete) {
-            const place = autocomplete.getPlace();
-            const location = place.geometry?.location;
-            if (location) {
-                setFormData(prev => prev ? {
-                    ...prev,
-                    ubicacionGoogle: {
-                        placeId: place.place_id,
-                        enlace: place.url,
-                        lat: location.lat(),
-                        lng: location.lng(),
-                    }
-                } : null);
-            }
+    const handlePlaceSelect = useCallback((place: google.maps.places.PlaceResult | null) => {
+        if (!place) return;
+        const location = place.geometry?.location;
+        if (location) {
+            setFormData(prev => prev ? {
+                ...prev,
+                ubicacionGoogle: {
+                    placeId: place.place_id,
+                    nombre: place.name,
+                    direccionFormateada: place.formatted_address,
+                    enlace: place.url,
+                    lat: location.lat(),
+                    lng: location.lng(),
+                }
+            } : null);
         }
-    };
+    }, []);
 
     const onMarkerDragEnd = (e: google.maps.MapMouseEvent) => {
         if (e.latLng) {
             setFormData(prev => prev ? {
                 ...prev,
                 ubicacionGoogle: {
-                    ...prev.ubicacionGoogle,
-                    lat: e.latLng?.lat(),
-                    lng: e.latLng?.lng(),
+                    placeId: undefined,
+                    nombre: undefined,
+                    direccionFormateada: undefined,
+                    enlace: undefined,
+                    lat: e.latLng!.lat(),
+                    lng: e.latLng!.lng(),
                 }
             } : null);
         }
@@ -197,7 +221,7 @@ export default function ConfiguracionVendedorPage() {
         if (!formData) return;
         setIsSaving(true);
         try {
-            await axios.put('/api/vendedor/configuracion', formData);
+            await axios.put('/api/dashboard/config', formData);
             addToast({ title: "Éxito", description: "Tu perfil ha sido actualizado.", color: "success" });
         } catch (error) {
             addToast({ title: "Error", description: "No se pudieron guardar los cambios.", color: "danger" });
@@ -252,18 +276,55 @@ export default function ConfiguracionVendedorPage() {
 
                 <fieldset className="p-4 border border-gray-300 rounded-lg">
                     <legend className="font-semibold px-2">Ubicación en Google Maps</legend>
-                    <p className="text-sm text-gray-500 mb-4">Busca tu negocio o arrastra el marcador a tu ubicación exacta.</p>
-                    <LoadScript
-                        googleMapsApiKey={GOOGLEMAPS_APIKEY}
-                        libraries={libraries}
-                    >
-                        <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={onPlaceChanged}>
-                            <Input placeholder="Buscar mi negocio en Google Maps..." className="mb-4" />
-                        </Autocomplete>
-                        <GoogleMap mapContainerStyle={mapContainerStyle} center={center} zoom={10}>
-                            <Marker position={center} draggable onDragEnd={onMarkerDragEnd} />
-                        </GoogleMap>
-                    </LoadScript>
+                    <div className="flex items-center space-x-2 mb-4">
+                        <Switch isSelected={useGooglePlace} onValueChange={setUseGooglePlace} />
+                        <label>Buscar mi local en Google</label>
+                    </div>
+
+                    <p className="text-sm text-gray-500 mb-4">
+                        {useGooglePlace
+                            ? "Busca tu negocio para enlazarlo a Google Maps."
+                            : "Arrastra el marcador rojo a la ubicación exacta de tu bodega."
+                        }
+                    </p>
+
+                    <APIProvider apiKey={GOOGLEMAPS_APIKEY} libraries={libraries}> 
+                        <div style={{ height: '400px', width: '100%', position: 'relative' }}>
+                            <Map
+                                defaultCenter={center}
+                                defaultZoom={13}
+                                mapId={'vendedor-map-config'}
+                                style={{ borderRadius: '0.5rem' }}
+                                gestureHandling={'greedy'}
+                                disableDefaultUI={false}
+                                zoomControl={true}
+                                scrollwheel={true}
+                            >
+                                {/* Marcador Manual (arrastrable) */}
+                                {!useGooglePlace && (
+                                    <AdvancedMarker position={center} draggable={true} onDragEnd={onMarkerDragEnd} />
+                                )}
+                                {/* Marcador de Google Place (estático) */}
+                                {useGooglePlace && formData.ubicacionGoogle?.placeId && (
+                                    <AdvancedMarker position={center} />
+                                )}
+                            </Map>
+                            {useGooglePlace && (
+                                <div style={{ position: 'absolute', top: '10px', left: '10px', width: '60%' }}>
+                                    <PlaceAutocomplete onPlaceSelect={handlePlaceSelect} />
+                                </div>
+                            )}
+                        </div>
+                    </APIProvider>
+
+                    {/* Nueva sección para mostrar datos del lugar seleccionado */}
+                    {useGooglePlace && formData.ubicacionGoogle?.placeId && (
+                        <div className="mt-4 p-4 border border-gray-300 rounded-lg bg-gray-50">
+                            <h4 className="font-semibold text-gray-800">Lugar Seleccionado en Google Maps</h4>
+                            <p className="text-gray-900 mt-1 font-medium">{formData.ubicacionGoogle.nombre}</p>
+                            <p className="text-sm text-gray-600">{formData.ubicacionGoogle.direccionFormateada}</p>
+                        </div>
+                    )}
                 </fieldset>
 
                 <fieldset className="p-4 border border-gray-300 rounded-lg">
