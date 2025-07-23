@@ -6,6 +6,7 @@ import { Providers } from "./providers";
 
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
+
 export const metadata: Metadata = {
   title: {
     default: siteConfig.name,
@@ -20,7 +21,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "white" },
-    { media: "(prefers-color-scheme: dark)", color: "black" },
   ],
 };
 
@@ -30,7 +30,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html suppressHydrationWarning lang="en">
+    // Se añade la clase "light" para forzar el tema claro
+    <html suppressHydrationWarning lang="en" className="light">
       <head />
       <body
         className={clsx(
