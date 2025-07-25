@@ -651,3 +651,80 @@ export const TrashIcon = (props: any) => {
     </svg>
   );
 };
+
+export const ComboIcon = (props: any) => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 48 48" // ViewBox adjusted for a standard size
+      fill="currentColor"
+      height="2em"
+      width="2em"
+      {...props}
+    >
+      {/* Path data has been translated and scaled to be centered */}
+      <path d="M14.9,1.81L13.5,14.01C9.1,15.51,6,19.61,6,24.41V40.41C6,41.51,6.9,42.41,8,42.41H22.9C24,42.41,24.9,41.51,24.9,40.41V24.41C24.9,19.51,21.7,15.41,17.3,14.01L15.9,1.81H16C17.1,1.81,17.9,0.91,17.9,0.01C17.9,-0.89,17.1,-1.79,16,-1.79H10.8C9.7,-1.79,8.8,-0.89,8.8,0.01C8.8,1.21,10,2.11,11.2,1.81H14.9V1.81C15,1.81,14.9,1.81,14.9,1.81z M22.9,38.81H10V34.81H22.9V38.81z M15.4,16.01C18.1,16.01,20.3,18.11,20.9,20.81H9.8C10.5,18.11,12.7,16.01,15.4,16.01z" />
+    </svg>
+  );
+};
+ 
+
+export const PromoIcon = (props: any) => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24" // Ajustado para que el icono se vea completo
+      fill="none" // Esto asegura que el fondo sea transparente
+      stroke="currentColor" // Esto permite colorear el icono con clases de texto (ej. className="text-blue-500")
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      height="2em"
+      width="2em"
+      {...props}
+    >
+      {/* Se eliminó el color fijo del 'stroke' para que herede 'currentColor' */}
+      <path d="M14 14H17M14 10H17M9 9.5V8.5M9 9.5H11.0001M9 9.5C7.20116 9.49996 7.00185 9.93222 7.0001 10.8325C6.99834 11.7328 7.00009 12 9.00009 12C11.0001 12 11.0001 12.2055 11.0001 13.1667C11.0001 13.889 11.0001 14.5 9.00009 14.5M9.00009 14.5L9 15.5M9.00009 14.5H7.0001M6.2 19H17.8C18.9201 19 19.4802 19 19.908 18.782C20.2843 18.5903 20.5903 18.2843 20.782 17.908C21 17.4802 21 16.9201 21 15.8V8.2C21 7.0799 21 6.51984 20.782 6.09202C20.5903 5.71569 20.2843 5.40973 19.908 5.21799C19.4802 5 18.9201 5 17.8 5H6.2C5.0799 5 4.51984 5 4.09202 5.21799C3.71569 5.40973 3.40973 5.71569 3.21799 6.09202C3 6.51984 3 7.07989 3 8.2V15.8C3 16.9201 3 17.4802 3.21799 17.908C3.40973 18.2843 3.71569 18.5903 4.09202 18.782C4.51984 19 5.07989 19 6.2 19Z" />
+    </svg>
+  );
+};
+
+
+export const PencilIcon = (props: any) => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 64 64" // Ajustado para que el icono se vea completo
+      fill="none" // Esto asegura que el fondo sea transparente
+      stroke="currentColor" // Esto permite colorear el icono con clases de texto (ej. className="text-blue-500")
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      height="2em"
+      width="2em"
+      {...props}
+    >
+      {/* Se eliminó el color fijo del 'stroke' para que herede 'currentColor' */}
+      <path fill="#231F20" d="M62.829,16.484L47.513,1.171c-1.562-1.563-4.094-1.563-5.657,0L0,43.031V64h20.973l41.856-41.855
+	C64.392,20.577,64.392,18.05,62.829,16.484z M18,56H8V46l0.172-0.172l10,10L18,56z"/>
+    </svg>
+  );
+};
+export const XMarkIcon = (props: any) => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24" // Ajustado para que el icono se vea completo
+      fill="none" // Esto asegura que el fondo sea transparente
+      stroke="currentColor" // Esto permite colorear el icono con clases de texto (ej. className="text-blue-500")
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      height="2em"
+      width="2em"
+      {...props}
+    >
+      <path d="M4 4L20 20M20 4L4 20" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+  );
+};

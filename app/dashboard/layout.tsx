@@ -12,6 +12,8 @@ import {
   LogOutIcon,
   PedidosIcon,
   ItemsIcon,
+  ComboIcon,
+  PromoIcon
 } from "@/components/icons"; // Asumo que tienes un icono 'Shield' o similar para Admin
 
 // Define el tipo de cada ítem de menú
@@ -39,6 +41,16 @@ const allMenuItems: MenuItem[] = [
     href: "/dashboard/productos",
     Icon: <ItemsIcon />,
     requiredRole: 5,
+  },
+  {
+    titulo: "Combos",
+    href: "/dashboard/combos",
+    Icon: <ComboIcon />,
+  },
+  {
+    titulo: "Promociones",
+    href: "/dashboard/promociones",
+    Icon: <PromoIcon />,
   },
   {
     titulo: "Configuración",
