@@ -724,7 +724,7 @@ export const XMarkIcon = (props: any) => {
       width="2em"
       {...props}
     >
-      <path d="M4 4L20 20M20 4L4 20" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M4 4L20 20M20 4L4 20" stroke="#000000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 };

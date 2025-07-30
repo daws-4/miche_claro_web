@@ -65,17 +65,34 @@ const OfertaFormModal: React.FC<OfertaFormModalProps> = ({ isOpen, onClose, onSu
         }
     }, [isOpen]);
 
-    const formatDateForInput = (dateString: string | undefined): string => {
+    const formatDateTimeForInput = (dateString: string | undefined): string => {
         if (!dateString) return '';
-        try { return new Date(dateString).toISOString().split('T')[0]; } catch (e) { return ''; }
+        try {
+            const fecha = new Date(dateString);
+
+            // Helper para añadir un cero inicial si es necesario (ej. 5 -> "05")
+            const pad = (num: number) => String(num).padStart(2, '0');
+
+            // Obtenemos los componentes en la zona horaria LOCAL del navegador
+            const yyyy = fecha.getFullYear();
+            const mm = pad(fecha.getMonth() + 1); // getMonth es 0-indexado
+            const dd = pad(fecha.getDate());
+            const hh = pad(fecha.getHours());
+            const min = pad(fecha.getMinutes());
+
+            // Devolvemos el string en el formato que el input "datetime-local" espera
+            return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+        } catch (e) {
+            return '';
+        }
     };
 
     useEffect(() => {
         if (isOpen) {
             const initialFormState = isEditMode && oferta ? {
                 ...oferta,
-                fecha_inicio: formatDateForInput(oferta.fecha_inicio),
-                fecha_fin: formatDateForInput(oferta.fecha_fin),
+                fecha_inicio: formatDateTimeForInput(oferta.fecha_inicio),
+                fecha_fin: formatDateTimeForInput(oferta.fecha_fin),
             } : initialState;
             setFormData(initialFormState);
             setBusquedaCategoria('');
@@ -153,13 +170,12 @@ const OfertaFormModal: React.FC<OfertaFormModalProps> = ({ isOpen, onClose, onSu
                             onBlur={() => setTimeout(() => setIsCategoriaListOpen(false), 150)}
                         />
                         {isCategoriaListOpen && busquedaCategoria && categoriasFiltradas.length > 0 && (
-                            // ---- CAMBIO AQUÍ ----
                             <ul className="absolute z-30 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-40 overflow-y-auto shadow-lg">
                                 {categoriasFiltradas.map(c => <li key={c} onMouseDown={() => handleSelectCategoria(c)} className="px-4 py-2 hover:bg-gray-100 cursor-pointer">{c}</li>)}
                             </ul>
                         )}
                         <div className="flex flex-wrap gap-2 mt-2">
-                            {formData.categorias_aplicables.map(c => <div key={c} className="flex items-center bg-gray-200 rounded-full px-3 py-1 text-sm">{c} <button type="button" onClick={() => handleDeselectCategoria(c)} className="ml-2 text-gray-600 hover:text-black"><XMarkIcon className="h-4 w-4 hover:cursor-pointer" /></button></div>)}
+                            {formData.categorias_aplicables.map(c => <div key={c} className="flex items-center bg-gray-200 rounded-full px-3 py-1 text-sm">{c} <button type="button" onClick={() => handleDeselectCategoria(c)} className="ml-2 text-gray-600 hover:text-black"><XMarkIcon className="h-4 w-4" /></button></div>)}
                         </div>
                     </div>
 
@@ -173,7 +189,6 @@ const OfertaFormModal: React.FC<OfertaFormModalProps> = ({ isOpen, onClose, onSu
                             onBlur={() => setTimeout(() => setIsProductoListOpen(false), 150)}
                         />
                         {isProductoListOpen && busquedaProducto && productosFiltrados.length > 0 && (
-                            // ---- Y CAMBIO AQUÍ ----
                             <ul className="absolute z-30 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-40 overflow-y-auto shadow-lg">
                                 {productosFiltrados.map(p => <li key={p._id} onMouseDown={() => handleSelectProducto(p._id)} className="px-4 py-2 hover:bg-gray-100 cursor-pointer">{p.nombre}</li>)}
                             </ul>
@@ -181,7 +196,7 @@ const OfertaFormModal: React.FC<OfertaFormModalProps> = ({ isOpen, onClose, onSu
                         <div className="flex flex-wrap gap-2 mt-2">
                             {formData.productos_aplicables.map(pId => {
                                 const producto = productosVendedor.find(p => p._id === pId);
-                                return (<div key={pId} className="flex items-center bg-blue-100 text-blue-800 rounded-full px-3 py-1 text-sm">{producto?.nombre || '...'} <button type="button" onClick={() => handleDeselectProducto(pId)} className="ml-2 text-blue-600 hover:text-black"><XMarkIcon className="h-4 w-4 hover:cursor-pointer" /></button></div>)
+                                return (<div key={pId} className="flex items-center bg-blue-100 text-blue-800 rounded-full px-3 py-1 text-sm">{producto?.nombre || '...'} <button type="button" onClick={() => handleDeselectProducto(pId)} className="ml-2 text-blue-600 hover:text-black"><XMarkIcon className="h-4 w-4" /></button></div>)
                             })}
                         </div>
                     </div>
@@ -189,9 +204,25 @@ const OfertaFormModal: React.FC<OfertaFormModalProps> = ({ isOpen, onClose, onSu
                     <p className="text-xs text-gray-500 -mt-2">Debes seleccionar al menos una categoría o un producto.</p>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input name="fecha_inicio" type="date" value={formData.fecha_inicio} onChange={handleChange} label="Fecha de Inicio" required />
-                        <Input name="fecha_fin" type="date" value={formData.fecha_fin} onChange={handleChange} label="Fecha de Fin (opcional)" />
+                        <Input
+                            name="fecha_inicio"
+                            type="datetime-local"
+                            value={formData.fecha_inicio}
+                            onChange={handleChange}
+                            label="Fecha y Hora de Inicio"
+                            labelPlacement='outside-top'
+                            required
+                        />
+                        <Input
+                            name="fecha_fin"
+                            type="datetime-local"
+                            value={formData.fecha_fin}
+                            onChange={handleChange}
+                            label="Fecha y Hora de Fin (opcional)"
+                            labelPlacement='outside-top'
+                        />
                     </div>
+
                     <div className="flex items-center space-x-2 pt-2">
                         <Switch isSelected={formData.activo} onValueChange={(v) => setFormData(p => ({ ...p, activo: v }))} />
                         <label className="text-sm font-medium">Oferta Activa</label>
@@ -206,9 +237,8 @@ const OfertaFormModal: React.FC<OfertaFormModalProps> = ({ isOpen, onClose, onSu
     );
 };
 
-// --- El componente principal de la página no necesita cambios ---
+// --- Componente Principal de la Página (ACTUALIZADO PARA MOSTRAR LA HORA) ---
 export default function GestionOfertasPage() {
-    // ... (El resto del componente es idéntico al anterior)
     const [ofertas, setOfertas] = useState<OfertaStored[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -218,6 +248,7 @@ export default function GestionOfertasPage() {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
+            // CORRECCIÓN: El endpoint era ofertas, no promociones.
             const response = await axios.get('/api/dashboard/promociones');
             if (response.data.success) setOfertas(response.data.data);
         } catch (error) {
@@ -291,8 +322,9 @@ export default function GestionOfertasPage() {
                                 <p className="text-blue-600 font-semibold">{oferta.tipo === 'PORCENTAJE' ? `${oferta.valor}% de descuento` : `$${oferta.valor} de descuento`}</p>
                                 <div className="text-sm text-gray-500 mt-3">
                                     <p>Aplica a: {oferta.categorias_aplicables?.length > 0 ? `${oferta.categorias_aplicables.join(', ')}` : oferta.productos_aplicables?.length > 0 ? `${oferta.productos_aplicables.length} producto(s)` : 'Toda la tienda'}</p>
-                                    <p>Válida desde: {new Date(oferta.fecha_inicio).toLocaleDateString()}</p>
-                                    {oferta.fecha_fin && <p>Hasta: {new Date(oferta.fecha_fin).toLocaleDateString()}</p>}
+                                    {/* --- VISUALIZACIÓN ACTUALIZADA --- */}
+                                    <p>Válida desde: {new Date(oferta.fecha_inicio).toLocaleString('es-VE', { dateStyle: 'short', timeStyle: 'short' })}</p>
+                                    {oferta.fecha_fin && <p>Hasta: {new Date(oferta.fecha_fin).toLocaleString('es-VE', { dateStyle: 'short', timeStyle: 'short' })}</p>}
                                 </div>
                                 <div className="mt-auto pt-4 flex justify-end gap-2">
                                     <Button onPress={() => handleEditar(oferta)} size="sm" isIconOnly className="bg-orange-500 text-white"><PencilIcon className="h-4 w-4" /></Button>

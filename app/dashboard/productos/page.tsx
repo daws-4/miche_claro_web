@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card, CardBody, Input, Button, Select, SelectItem, addToast, Switch } from '@heroui/react';
 import { TrashIcon } from "@/components/icons"; // Asume que tienes un icono de basura
 import axios from 'axios';
+import { SecureS3Image } from '@/components/SecureS3Image';
 
 // --- Constantes y Tipos ---
 
@@ -57,36 +58,44 @@ const initialStateForm: ProductoForm = {
     precio: '', stock: 0, imagenes: [], publicado: true,
 };
 
-// --- Componente del Formulario Modal ---
+// --- Componente del Formulario Modal (ACTUALIZADO) ---
 const ProductoFormModal = ({ isOpen, onClose, onSubmit, producto, isEditMode }: ProductoFormModalProps) => {
     const [formData, setFormData] = useState<ProductoForm>(initialStateForm);
+    const [isUploading, setIsUploading] = useState(false);
+    const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
+    const [previewsToUpload, setPreviewsToUpload] = useState<{ file: File; previewUrl: string }[]>([]);
 
     useEffect(() => {
         if (isOpen) {
             const initialState = isEditMode && producto ? producto : initialStateForm;
             setFormData(initialState);
+            setPreviewsToUpload([]); // Limpiar previsualizaciones al abrir
         }
     }, [isOpen, isEditMode, producto]);
 
-    // Filtra las categorías disponibles según el tipo de producto seleccionado
+    // Limpieza de memoria para los object URLs al cerrar el modal
+    useEffect(() => {
+        return () => {
+            previewsToUpload.forEach(p => URL.revokeObjectURL(p.previewUrl));
+        };
+    }, [previewsToUpload]);
+
+
     const categoriasDisponibles = useMemo(() => {
         if (formData.tipo === 'bebida') return categoriasBebida;
         if (formData.tipo === 'comida') return categoriasComida;
-        return []; // No hay categorías para "otro"
+        return [];
     }, [formData.tipo]);
 
-    // Resetea la categoría si el tipo cambia y la categoría actual ya no es válida
     useEffect(() => {
         if (!categoriasDisponibles.includes(formData.categoria)) {
             setFormData(prev => ({ ...prev, categoria: '' }));
         }
     }, [categoriasDisponibles, formData.categoria]);
 
-
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type } = e.target;
         const valueToUpdate = type === 'number' ? parseFloat(value) || '' : value;
-
         setFormData(prev => {
             const newFormData = { ...prev };
             if (name.includes('.')) {
@@ -102,7 +111,7 @@ const ProductoFormModal = ({ isOpen, onClose, onSubmit, producto, isEditMode }: 
     };
 
     const handleSelectChange = (name: string, value: string | null) => {
-        if (value === null) return; // No hacer nada si se deselecciona
+        if (value === null) return;
         setFormData(prev => ({
             ...prev,
             ...(name === 'tipo' && { tipo: value }),
@@ -111,106 +120,259 @@ const ProductoFormModal = ({ isOpen, onClose, onSubmit, producto, isEditMode }: 
         }));
     };
 
-    // Simulación de subida de imágenes
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
-            const fileUrls = Array.from(e.target.files).map(file => URL.createObjectURL(file));
-            setFormData(prev => ({ ...prev, imagenes: [...prev.imagenes, ...fileUrls] }));
+    // Manejador de imágenes actualizado: solo crea previsualizaciones
+    const handleImageSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files) return;
+
+        const newPreviews = Array.from(files).map(file => ({
+            file: file,
+            previewUrl: URL.createObjectURL(file)
+        }));
+
+        setPreviewsToUpload(prev => [...prev, ...newPreviews]);
+    };
+    // --- LÓGICA DE SUBIDA CON MEJOR MANEJO DE ERRORES ---
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        setIsUploading(true);
+        addToast({ title: "Subiendo imágenes...", description: `Subiendo ${files.length} archivo(s).` });
+
+        try {
+            const uploadPromises = Array.from(files).map(async (file) => {
+                const { data } = await axios.post('/api/upload-url', { fileType: file.type });
+                if (!data.success) throw new Error('No se pudo obtener la URL de subida.');
+
+                const { uploadUrl, imageUrl } = data;
+
+                const uploadResponse = await fetch(uploadUrl, {
+                    method: "PUT",
+                    headers: { "Content-Type": file.type },
+                    body: file,
+                });
+
+                if (!uploadResponse.ok) {
+                    // --- AQUÍ OBTENEMOS EL DETALLE DEL ERROR ---
+                    const errorDetails = await uploadResponse.text(); // S3 devuelve un XML con el error
+                    console.error("Error de S3:", errorDetails);
+                    throw new Error(`Error al subir a S3: ${uploadResponse.statusText}`);
+                }
+
+                return imageUrl;
+            });
+
+            const newImageUrls = await Promise.all(uploadPromises);
+
+            setFormData(prev => ({ ...prev, imagenes: [...prev.imagenes, ...newImageUrls] }));
+            addToast({ title: "Éxito", description: "Imágenes subidas correctamente." });
+
+        } catch (error) {
+            console.error(error);
+            addToast({ title: "Error", description: "No se pudieron subir las imágenes. Revisa la consola.", color: "danger" });
+        } finally {
+            setIsUploading(false);
+        }
+    };
+    // Manejador de eliminación actualizado: distingue entre previsualizaciones y subidas
+    const handleRemoveImage = async (source: string, index: number, isPreview: boolean) => {
+        if (isPreview) {
+            const previewToRemove = previewsToUpload[index];
+            URL.revokeObjectURL(previewToRemove.previewUrl);
+            setPreviewsToUpload(prev => prev.filter((_, i) => i !== index));
+        } else {
+            try {
+                const fileKey = source.split('/').pop();
+                await axios.delete('/api/upload-url', { data: { fileKey } });
+                setFormData(prev => ({ ...prev, imagenes: prev.imagenes.filter((_, i) => i !== index) }));
+                addToast({ title: "Éxito", description: "Imagen eliminada de S3." });
+            } catch (error) {
+                console.error(error);
+                addToast({ title: "Error", description: "No se pudo eliminar la imagen de S3.", color: "danger" });
+            }
         }
     };
 
-    const handleRemoveImage = (index: number) => {
-        setFormData(prev => ({ ...prev, imagenes: prev.imagenes.filter((_, i) => i !== index) }));
+
+    // Submit actualizado: la subida a S3 ocurre aquí
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsUploading(true);
+
+        let finalImageUrls = [...formData.imagenes];
+
+        try {
+            if (previewsToUpload.length > 0) {
+                addToast({ title: "Subiendo imágenes...", description: "Por favor espera." });
+
+                const uploadPromises = previewsToUpload.map(async (preview) => {
+                    const { data } = await axios.post('/api/upload-url', { fileType: preview.file.type });
+                    if (!data.success) throw new Error('No se pudo obtener la URL de subida.');
+
+                    const { uploadUrl, imageUrl } = data;
+
+                    const uploadResponse = await fetch(uploadUrl, {
+                        method: "PUT",
+                        headers: { "Content-Type": preview.file.type },
+                        body: preview.file,
+                    });
+
+                    if (!uploadResponse.ok) {
+                        const errorDetails = await uploadResponse.text();
+                        console.error("Error de S3:", errorDetails);
+                        throw new Error(`Error al subir a S3: ${uploadResponse.statusText}`);
+                    }
+
+                    return imageUrl;
+                });
+
+                const newImageUrls = await Promise.all(uploadPromises);
+                finalImageUrls.push(...newImageUrls);
+            }
+
+            const finalFormData = { ...formData, imagenes: finalImageUrls };
+            onSubmit(finalFormData);
+
+        } catch (error) {
+            console.error(error);
+            addToast({ title: "Error", description: "No se pudieron subir las imágenes. Inténtalo de nuevo.", color: "danger" });
+        } finally {
+            setIsUploading(false);
+        }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        onSubmit(formData);
+    const handlePreviewClick = async (s3Url: string) => {
+        try {
+            const fileKey = s3Url.split('/').pop();
+            const { data } = await axios.post('/api/get-image-url', { fileKey });
+            if (data.success) {
+                setFullScreenImage(data.url);
+            } else {
+                addToast({ title: "Error", description: "No se pudo cargar la previsualización.", color: "danger" });
+            }
+        } catch (error) {
+            addToast({ title: "Error", description: "No se pudo cargar la previsualización.", color: "danger" });
+        }
     };
 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
-            <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                <h2 className="text-2xl font-bold mb-4">{isEditMode ? 'Editar Producto' : 'Crear Nuevo Producto'}</h2>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Fieldset: Información Básica */}
-                    <fieldset className="p-4 border rounded-lg">
-                        <legend className="font-semibold px-2">Información Básica</legend>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Input name="nombre" value={formData.nombre} onChange={handleChange} label="Nombre del Producto" required />
-                            <Input name="marca" value={formData.marca || ''} onChange={handleChange} label="Marca" />
-                            <Input name="descripcion" value={formData.descripcion || ''} onChange={handleChange} label="Descripción" className="md:col-span-2" />
-                        </div>
-                    </fieldset>
+        <>
+            {fullScreenImage && (
+                <div
+                    className="fixed inset-0 bg-black/80 flex justify-center items-center z-[60]"
+                    onClick={() => setFullScreenImage(null)}
+                >
+                    <img
+                        src={fullScreenImage}
+                        alt="Previsualización a tamaño completo"
+                        className="max-w-[90vw] max-h-[90vh] object-contain"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                    <button
+                        className="absolute top-4 right-4 text-white text-3xl font-bold cursor-pointer"
+                        onClick={() => setFullScreenImage(null)}
+                    >
+                        &times;
+                    </button>
+                </div>
+            )}
 
-                    {/* Fieldset: Categorización (ACTUALIZADO) */}
-                    <fieldset className="p-4 border rounded-lg">
-                        <legend className="font-semibold px-2">Categorización</legend>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Select label="Tipo" selectedKeys={[formData.tipo]} onSelectionChange={(keys) => handleSelectChange('tipo', Array.from(keys)[0] as string)} isRequired>
-                                {tiposProducto.map(t => <SelectItem key={t.key}>{t.label}</SelectItem>)}
-                            </Select>
-
-                            <Select label="Categoría" selectedKeys={formData.categoria ? [formData.categoria] : []} onSelectionChange={(keys) => handleSelectChange('categoria', Array.from(keys)[0] as string)} isRequired isDisabled={categoriasDisponibles.length === 0}>
-                                {categoriasDisponibles.map(c => <SelectItem key={c}>{c}</SelectItem>)}
-                            </Select>
-
-                            <Input name="subcategoria" value={formData.subcategoria || ''} onChange={handleChange} label="Sub-categoría (Opcional)" className="md:col-span-2" />
-                        </div>
-                    </fieldset>
-
-                    {/* Fieldset: Precio e Inventario */}
-                    <fieldset className="p-4 border rounded-lg">
-                        <legend className="font-semibold px-2">Precio e Inventario</legend>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Input name="precio" type="number" value={String(formData.precio)} onChange={handleChange} label="Precio ($)" required />
-                            <Input name="stock" type="number" value={String(formData.stock)} onChange={handleChange} label="Cantidad en Stock" required />
-                            <div className="flex items-center space-x-2 pt-5 md:col-span-2">
-                                <Switch isSelected={formData.publicado} onValueChange={(v) => setFormData(p => ({ ...p, publicado: v }))} />
-                                <label className="text-sm font-medium">Publicado</label>
+            <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
+                <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <h2 className="text-2xl font-bold mb-4">{isEditMode ? 'Editar Producto' : 'Crear Nuevo Producto'}</h2>
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* Fieldset: Información Básica */}
+                        <fieldset className="p-4 border rounded-lg">
+                            <legend className="font-semibold px-2">Información Básica</legend>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Input name="nombre" value={formData.nombre} onChange={handleChange} label="Nombre del Producto" required />
+                                <Input name="marca" value={formData.marca || ''} onChange={handleChange} label="Marca" />
+                                <Input name="descripcion" value={formData.descripcion || ''} onChange={handleChange} label="Descripción" className="md:col-span-2" />
                             </div>
-                        </div>
-                    </fieldset>
+                        </fieldset>
 
-                    {/* Fieldset: Detalles Físicos */}
-                    <fieldset className="p-4 border rounded-lg">
-                        <legend className="font-semibold px-2">Detalles Físicos</legend>
-                        <div className="flex gap-4">
-                            <Input name="contenido.valor" type="number" value={String(formData.contenido.valor)} onChange={handleChange} label="Contenido" required />
-                            <Select label="Unidad" selectedKeys={[formData.contenido.unidad]} onSelectionChange={(keys) => handleSelectChange('contenido.unidad', Array.from(keys)[0] as string)} isRequired>
-                                {unidadesContenido.map(u => <SelectItem key={u.key}>{u.label}</SelectItem>)}
-                            </Select>
-                        </div>
-                    </fieldset>
+                        {/* Fieldset: Categorización (ACTUALIZADO) */}
+                        <fieldset className="p-4 border rounded-lg">
+                            <legend className="font-semibold px-2">Categorización</legend>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Select label="Tipo" selectedKeys={[formData.tipo]} onSelectionChange={(keys) => handleSelectChange('tipo', Array.from(keys)[0] as string)} isRequired>
+                                    {tiposProducto.map(t => <SelectItem key={t.key}>{t.label}</SelectItem>)}
+                                </Select>
 
-                    {/* Fieldset: Imágenes del Producto */}
-                    <fieldset className="p-4 border rounded-lg">
-                        <legend className="font-semibold px-2">Imágenes del Producto</legend>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                            {formData.imagenes.map((imgUrl, index) => (
-                                <div key={index} className="relative group">
-                                    <img src={imgUrl} alt={`Imagen ${index + 1}`} className="w-full h-32 object-cover rounded-md" />
-                                    <Button isIconOnly color="danger" size="sm" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100" onPress={() => handleRemoveImage(index)}>
-                                        <TrashIcon />
-                                    </Button>
+                                <Select label="Categoría" selectedKeys={formData.categoria ? [formData.categoria] : []} onSelectionChange={(keys) => handleSelectChange('categoria', Array.from(keys)[0] as string)} isRequired isDisabled={categoriasDisponibles.length === 0}>
+                                    {categoriasDisponibles.map(c => <SelectItem key={c}>{c}</SelectItem>)}
+                                </Select>
+
+                                <Input name="subcategoria" value={formData.subcategoria || ''} onChange={handleChange} label="Sub-categoría (Opcional)" className="md:col-span-2" />
+                            </div>
+                        </fieldset>
+
+                        {/* Fieldset: Precio e Inventario */}
+                        <fieldset className="p-4 border rounded-lg">
+                            <legend className="font-semibold px-2">Precio e Inventario</legend>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Input name="precio" type="number" value={String(formData.precio)} onChange={handleChange} label="Precio ($)" required />
+                                <Input name="stock" type="number" value={String(formData.stock)} onChange={handleChange} label="Cantidad en Stock" required />
+                                <div className="flex items-center space-x-2 pt-5 md:col-span-2">
+                                    <Switch isSelected={formData.publicado} onValueChange={(v) => setFormData(p => ({ ...p, publicado: v }))} />
+                                    <label className="text-sm font-medium">Publicado</label>
                                 </div>
-                            ))}
-                            <label className="w-full h-32 border-2 border-dashed rounded-md flex items-center justify-center cursor-pointer hover:bg-gray-50">
-                                <span className="text-gray-500">+ Añadir</span>
-                                <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageUpload} />
-                            </label>
-                        </div>
-                    </fieldset>
+                            </div>
+                        </fieldset>
 
-                    <div className="flex justify-end gap-4 mt-6">
-                        <Button type="button" onPress={onClose} className="bg-gray-200">Cancelar</Button>
-                        <Button type="submit" className="bg-[#007D8A] text-white">{isEditMode ? 'Guardar Cambios' : 'Crear Producto'}</Button>
-                    </div>
-                </form>
+                        {/* Fieldset: Detalles Físicos */}
+                        <fieldset className="p-4 border rounded-lg">
+                            <legend className="font-semibold px-2">Detalles Físicos</legend>
+                            <div className="flex gap-4">
+                                <Input name="contenido.valor" type="number" value={String(formData.contenido.valor)} onChange={handleChange} label="Contenido" required />
+                                <Select label="Unidad" selectedKeys={[formData.contenido.unidad]} onSelectionChange={(keys) => handleSelectChange('contenido.unidad', Array.from(keys)[0] as string)} isRequired>
+                                    {unidadesContenido.map(u => <SelectItem key={u.key}>{u.label}</SelectItem>)}
+                                </Select>
+                            </div>
+                        </fieldset>
+                        <fieldset className="p-4 border rounded-lg">
+                            <legend className="font-semibold px-2">Imágenes del Producto</legend>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                {/* Renderizar imágenes ya guardadas */}
+                                {formData.imagenes.map((imgUrl, index) => (
+                                    <div key={imgUrl} className="relative group">
+                                        <div onClick={() => handlePreviewClick(imgUrl)} className="cursor-pointer">
+                                            <SecureS3Image s3Url={imgUrl} alt={`Imagen ${index + 1}`} className="w-full h-32 object-cover rounded-md" />
+                                        </div>
+                                        <Button isIconOnly color="danger" size="sm" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100" onPress={() => {handleRemoveImage(imgUrl, index, false); }}>
+                                            <TrashIcon />
+                                        </Button>
+                                    </div>
+                                ))}
+                                {/* Renderizar previsualizaciones pendientes */}
+                                {previewsToUpload.map((preview, index) => (
+                                    <div key={preview.previewUrl} className="relative group">
+                                        <div onClick={() => setFullScreenImage(preview.previewUrl)} className="cursor-pointer">
+                                            <img src={preview.previewUrl} alt={`Previsualización ${index + 1}`} className="w-full h-32 object-cover rounded-md border-2 border-dashed border-blue-400" />
+                                        </div>
+                                        <Button isIconOnly color="danger" size="sm" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100" onPress={() => {handleRemoveImage(preview.previewUrl, index, true); }}>
+                                            <TrashIcon />
+                                        </Button>
+                                    </div>
+                                ))}
+                                <label className={`w-full h-32 border-2 border-dashed rounded-md flex items-center justify-center ${isUploading ? 'cursor-not-allowed bg-gray-100' : 'cursor-pointer hover:bg-gray-50'}`}>
+                                    <span className="text-gray-500">{isUploading ? 'Guardando...' : '+ Añadir'}</span>
+                                    <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageSelection} disabled={isUploading} />
+                                </label>
+                            </div>
+                        </fieldset>
+
+                        <div className="flex justify-end gap-4 mt-6">
+                            <Button type="button" onPress={onClose} className="bg-gray-200">Cancelar</Button>
+                            <Button type="submit" isLoading={isUploading} className="bg-[#007D8A] text-white">{isUploading ? 'Guardando...' : (isEditMode ? 'Guardar Cambios' : 'Crear Producto')}</Button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </div>
+        </>
     );
 };
 
@@ -355,7 +517,14 @@ export default function GestionProductosPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {productosPaginados.map(producto => (
                         <Card key={producto._id} className="shadow-lg flex flex-col">
-                            <img src={producto.imagenes[0] || 'https://placehold.co/600x400/EEE/31343C?text=Sin+Imagen'} alt={producto.nombre} className="w-full h-40 object-cover rounded-t-xl" />
+                            {producto.imagenes.length > 0 ?
+                                <SecureS3Image
+                                    s3Url={producto.imagenes[0]}
+                                    alt={producto.nombre}
+                                    className="w-full h-40 object-cover rounded-t-xl" />
+                                :
+                                <img src={producto.imagenes[0] || 'https://placehold.co/600x400/EEE/31343C?text=Sin+Imagen'} alt={producto.nombre} className="w-full h-40 object-cover rounded-t-xl" />
+                            }
                             <CardBody className="p-4 flex flex-col flex-grow">
                                 <div className="flex justify-between items-start">
                                     <h3 className="font-bold text-lg">{producto.nombre}</h3>
