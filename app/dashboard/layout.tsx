@@ -13,7 +13,7 @@ import {
   PedidosIcon,
   ItemsIcon,
   ComboIcon,
-  PromoIcon
+  PromoIcon,
 } from "@/components/icons"; // Asumo que tienes un icono 'Shield' o similar para Admin
 
 // Define el tipo de cada ítem de menú

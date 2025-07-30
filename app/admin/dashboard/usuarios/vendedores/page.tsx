@@ -556,7 +556,6 @@ export default function GestionVendedoresPage() {
           }
         }
       } catch (error) {
-        console.error("No autenticado o error de sesión:", error);
         addToast({
           title: "Error de Sesión",
           description: "No se pudo verificar su sesión.",
@@ -585,7 +584,6 @@ export default function GestionVendedoresPage() {
       if (axios.isAxiosError(error) && error.response?.status === 404) {
         setUsuarios([]);
       } else {
-        console.error("Error al obtener vendedores:", error);
         addToast({
           title: "Error",
           description: "No se pudieron cargar los vendedores.",
@@ -642,7 +640,6 @@ export default function GestionVendedoresPage() {
         });
         fetchUsuarios();
       } catch (error) {
-        console.error("Error al eliminar vendedor:", error);
         addToast({
           title: "Error",
           description: "No se pudo eliminar el vendedor.",
@@ -704,7 +701,6 @@ export default function GestionVendedoresPage() {
       fetchUsuarios();
       setIsModalOpen(false);
     } catch (error) {
-      console.error("Error al guardar el vendedor:", error);
       addToast({
         title: "Error",
         description: "No se pudo guardar el vendedor.",

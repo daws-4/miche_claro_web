@@ -14,16 +14,12 @@ const getAdminIdFromSession = async (
 ): Promise<string | null> => {
   // Verifica que la clave secreta esté definida
   if (!SECRET_KEY) {
-    console.error("La clave secreta de JWT no está definida.");
-
     return null;
   }
 
   // Obtiene el token de la cookie de la petición
   const token = req.cookies.get("loginCookie")?.value;
 
-  console.log("Token de sesión:", token);
-  console.log("Clave secreta:", SECRET_KEY);
   if (!token) {
     return null; // No hay token, por lo tanto no hay sesión
   }
@@ -34,8 +30,6 @@ const getAdminIdFromSession = async (
       token,
       new TextEncoder().encode(SECRET_KEY),
     );
-
-    console.log("Payload del token:", payload);
 
     // Asume que el payload del token contiene el ID del admin como `_id`
     return payload._id as string;
@@ -52,7 +46,6 @@ export async function GET(req: NextRequest) {
     await connectDB();
     const adminId = await getAdminIdFromSession(req);
 
-    console.log("Admin ID:", adminId);
     if (!adminId) {
       return NextResponse.json(
         { success: false, error: "No autenticado" },

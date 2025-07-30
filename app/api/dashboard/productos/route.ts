@@ -1,23 +1,26 @@
 import { NextResponse, NextRequest } from "next/server";
-import {connectDB} from "@/lib/db";
-import Productos from "@/models/productos"; // Asegúrate de que la ruta a tu modelo sea correcta
 import { jwtVerify } from "jose";
 import mongoose from "mongoose";
+
+import { connectDB } from "@/lib/db";
+import Productos from "@/models/productos"; // Asegúrate de que la ruta a tu modelo sea correcta
 
 const SECRET_KEY = process.env.SECRET_KEY;
 
 // --- Helper para obtener el ID del vendedor desde la cookie de sesión ---
 const getVendedorIdFromSession = async (
-  req: NextRequest
+  req: NextRequest,
 ): Promise<string | null> => {
   if (!SECRET_KEY) return null;
   const token = req.cookies.get("userSessionCookie")?.value;
+
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(
       token,
-      new TextEncoder().encode(SECRET_KEY)
+      new TextEncoder().encode(SECRET_KEY),
     );
+
     return payload._id as string;
   } catch (error) {
     return null;
@@ -27,10 +30,11 @@ const getVendedorIdFromSession = async (
 // GET: Obtener todos los productos del vendedor logueado
 export async function GET(req: NextRequest) {
   const vendedorId = await getVendedorIdFromSession(req);
+
   if (!vendedorId) {
     return NextResponse.json(
       { success: false, error: "No autenticado" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -39,13 +43,15 @@ export async function GET(req: NextRequest) {
     const productos = await Productos.find({
       id_usuarioVendedor: vendedorId,
     }).sort({ createdAt: -1 });
+
     return NextResponse.json({ success: true, data: productos });
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Ocurrió un error desconocido";
+
     return NextResponse.json(
       { success: false, error: errorMessage },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -53,10 +59,11 @@ export async function GET(req: NextRequest) {
 // POST: Crear un nuevo producto
 export async function POST(req: NextRequest) {
   const vendedorId = await getVendedorIdFromSession(req);
+
   if (!vendedorId) {
     return NextResponse.json(
       { success: false, error: "No autenticado" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -68,20 +75,22 @@ export async function POST(req: NextRequest) {
       ...body,
       id_usuarioVendedor: vendedorId,
     });
+
     return NextResponse.json(
       { success: true, data: nuevoProducto },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error: any) {
     if (error.name === "ValidationError") {
       return NextResponse.json(
         { success: false, error: error.message },
-        { status: 400 }
+        { status: 400 },
       );
     }
+
     return NextResponse.json(
       { success: false, error: "Error del servidor" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -89,10 +98,11 @@ export async function POST(req: NextRequest) {
 // PUT: Actualizar un producto existente
 export async function PUT(req: NextRequest) {
   const vendedorId = await getVendedorIdFromSession(req);
+
   if (!vendedorId) {
     return NextResponse.json(
       { success: false, error: "No autenticado" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -103,7 +113,7 @@ export async function PUT(req: NextRequest) {
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json(
         { success: false, error: "ID de producto inválido" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -114,10 +124,11 @@ export async function PUT(req: NextRequest) {
       _id: id,
       id_usuarioVendedor: vendedorId,
     });
+
     if (!productoExistente) {
       return NextResponse.json(
         { success: false, error: "Producto no encontrado o no autorizado" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -125,11 +136,12 @@ export async function PUT(req: NextRequest) {
       new: true,
       runValidators: true,
     });
+
     return NextResponse.json({ success: true, data: productoActualizado });
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error.message },
-      { status: 400 }
+      { status: 400 },
     );
   }
 }
@@ -137,10 +149,11 @@ export async function PUT(req: NextRequest) {
 // DELETE: Eliminar un producto
 export async function DELETE(req: NextRequest) {
   const vendedorId = await getVendedorIdFromSession(req);
+
   if (!vendedorId) {
     return NextResponse.json(
       { success: false, error: "No autenticado" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -151,7 +164,7 @@ export async function DELETE(req: NextRequest) {
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json(
         { success: false, error: "ID de producto inválido" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -164,7 +177,7 @@ export async function DELETE(req: NextRequest) {
     if (!productoEliminado) {
       return NextResponse.json(
         { success: false, error: "Producto no encontrado o no autorizado" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -172,7 +185,7 @@ export async function DELETE(req: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { success: false, error: "Error del servidor" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

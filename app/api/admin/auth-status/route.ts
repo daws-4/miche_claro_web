@@ -7,12 +7,7 @@ import Administradores from "@/models/administradores"; // Asegúrate de que la 
 const SECRET_KEY = process.env.SECRET_KEY;
 
 export async function GET(request: NextRequest) {
-  // Verifica que la clave secreta esté definida
   if (!SECRET_KEY) {
-    console.error(
-      "La clave secreta de JWT (SECRET_KEY) no está definida en .env.local",
-    );
-
     return NextResponse.json(
       { success: false, error: "Error de configuración del servidor." },
       { status: 500 },
@@ -61,8 +56,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: admin }, { status: 200 });
   } catch (error) {
-    console.error("Error en la verificación del JWT:", error);
-
     return NextResponse.json(
       { success: false, error: "Sesión inválida o expirada." },
       { status: 401 },

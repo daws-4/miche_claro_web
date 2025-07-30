@@ -19,9 +19,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "white" },
-  ],
+  themeColor: [{ media: "(prefers-color-scheme: light)", color: "white" }],
 };
 
 export default function RootLayout({
@@ -31,7 +29,7 @@ export default function RootLayout({
 }) {
   return (
     // Se añade la clase "light" para forzar el tema claro
-    <html suppressHydrationWarning lang="en" className="light">
+    <html suppressHydrationWarning className="light" lang="en">
       <head />
       <body
         className={clsx(

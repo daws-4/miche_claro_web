@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     if (!fileKey) {
       return NextResponse.json(
         { success: false, error: "Falta el fileKey." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -30,15 +30,16 @@ export async function POST(req: NextRequest) {
         Bucket: BUCKET_NAME,
         Key: fileKey,
       }),
-      { expiresIn: 3600 } // La URL es válida por 1 hora
+      { expiresIn: 3600 }, // La URL es válida por 1 hora
     );
 
     return NextResponse.json({ success: true, url: signedUrl });
   } catch (error) {
     console.error("Error generando URL firmada de lectura:", error);
+
     return NextResponse.json(
       { success: false, error: "Error al generar la URL." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

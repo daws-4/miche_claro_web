@@ -16,6 +16,7 @@ import {
   AdvancedMarker,
   useMap,
 } from "@vis.gl/react-google-maps";
+import Image from "next/image";
 
 import { TrashIcon } from "@/components/icons"; // Asume que tienes un icono de basura
 import { SecureS3Image } from "@/components/SecureS3Image";
@@ -128,7 +129,9 @@ export default function ConfiguracionVendedorPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [useGooglePlace, setUseGooglePlace] = useState(true);
-  const [previewsToUpload, setPreviewsToUpload] = useState<{ file: File; previewUrl: string }[]>([]);
+  const [previewsToUpload, setPreviewsToUpload] = useState<
+    { file: File; previewUrl: string }[]
+  >([]);
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
 
   const GOOGLEMAPS_APIKEY = process.env.NEXT_PUBLIC_GOOGLEMAPS_APIKEY;
@@ -184,16 +187,16 @@ export default function ConfiguracionVendedorPage() {
         setFormData((prev) =>
           prev
             ? {
-              ...prev,
-              ubicacionGoogle: {
-                placeId: place.place_id,
-                nombre: place.name,
-                direccionFormateada: place.formatted_address,
-                enlace: place.url,
-                lat: location.lat(),
-                lng: location.lng(),
-              },
-            }
+                ...prev,
+                ubicacionGoogle: {
+                  placeId: place.place_id,
+                  nombre: place.name,
+                  direccionFormateada: place.formatted_address,
+                  enlace: place.url,
+                  lat: location.lat(),
+                  lng: location.lng(),
+                },
+              }
             : null,
         );
       }
@@ -206,16 +209,16 @@ export default function ConfiguracionVendedorPage() {
       setFormData((prev) =>
         prev
           ? {
-            ...prev,
-            ubicacionGoogle: {
-              placeId: undefined,
-              nombre: undefined,
-              direccionFormateada: undefined,
-              enlace: undefined,
-              lat: e.latLng!.lat(),
-              lng: e.latLng!.lng(),
-            },
-          }
+              ...prev,
+              ubicacionGoogle: {
+                placeId: undefined,
+                nombre: undefined,
+                direccionFormateada: undefined,
+                enlace: undefined,
+                lat: e.latLng!.lat(),
+                lng: e.latLng!.lng(),
+              },
+            }
           : null,
       );
     }
@@ -282,34 +285,58 @@ export default function ConfiguracionVendedorPage() {
   // --- MANEJADORES DE IMÁGENES ACTUALIZADOS ---
   const handleImageSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
+
     if (!files) return;
-    const newPreviews = Array.from(files).map(file => ({ file, previewUrl: URL.createObjectURL(file) }));
-    setPreviewsToUpload(prev => [...prev, ...newPreviews]);
+    const newPreviews = Array.from(files).map((file) => ({
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
+
+    setPreviewsToUpload((prev) => [...prev, ...newPreviews]);
   };
 
-  const handleRemoveImage = async (source: string, index: number, isPreview: boolean) => {
+  const handleRemoveImage = async (
+    source: string,
+    index: number,
+    isPreview: boolean,
+  ) => {
     if (isPreview) {
       const previewToRemove = previewsToUpload[index];
+
       URL.revokeObjectURL(previewToRemove.previewUrl);
-      setPreviewsToUpload(prev => prev.filter((_, i) => i !== index));
+      setPreviewsToUpload((prev) => prev.filter((_, i) => i !== index));
     } else {
       try {
-        const fileKey = source.split('/').pop();
-        await axios.delete('/api/upload-url', { data: { fileKey } });
-        setFormData(prev => prev ? { ...prev, imagenes: prev.imagenes.filter((_, i) => i !== index) } : null);
+        const fileKey = source.split("/").pop();
+
+        await axios.delete("/api/upload-url", { data: { fileKey } });
+        setFormData((prev) =>
+          prev
+            ? { ...prev, imagenes: prev.imagenes.filter((_, i) => i !== index) }
+            : null,
+        );
       } catch (error) {
-        addToast({ title: "Error", description: "No se pudo eliminar la imagen de S3.", color: "danger" });
+        addToast({
+          title: "Error",
+          description: "No se pudo eliminar la imagen de S3.",
+          color: "danger",
+        });
       }
     }
   };
 
   const handlePreviewClick = async (s3Url: string) => {
     try {
-      const fileKey = s3Url.split('/').pop();
-      const { data } = await axios.post('/api/get-image-url', { fileKey });
+      const fileKey = s3Url.split("/").pop();
+      const { data } = await axios.post("/api/get-image-url", { fileKey });
+
       if (data.success) setFullScreenImage(data.url);
     } catch (error) {
-      addToast({ title: "Error", description: "No se pudo cargar la imagen.", color: "danger" });
+      addToast({
+        title: "Error",
+        description: "No se pudo cargar la imagen.",
+        color: "danger",
+      });
     }
   };
 
@@ -323,24 +350,47 @@ export default function ConfiguracionVendedorPage() {
 
     try {
       if (previewsToUpload.length > 0) {
-        addToast({ title: "Subiendo imágenes...", description: "Este proceso puede tardar un momento." });
+        addToast({
+          title: "Subiendo imágenes...",
+          description: "Este proceso puede tardar un momento.",
+        });
         const uploadPromises = previewsToUpload.map(async (preview) => {
-          const { data } = await axios.post('/api/upload-url', { fileType: preview.file.type });
-          if (!data.success) throw new Error('No se pudo obtener la URL de subida.');
+          const { data } = await axios.post("/api/upload-url", {
+            fileType: preview.file.type,
+          });
+
+          if (!data.success)
+            throw new Error("No se pudo obtener la URL de subida.");
           const { uploadUrl, imageUrl } = data;
-          await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": preview.file.type }, body: preview.file });
+
+          await fetch(uploadUrl, {
+            method: "PUT",
+            headers: { "Content-Type": preview.file.type },
+            body: preview.file,
+          });
+
           return imageUrl;
         });
         const newImageUrls = await Promise.all(uploadPromises);
+
         finalImageUrls.push(...newImageUrls);
       }
 
       const finalFormData = { ...formData, imagenes: finalImageUrls };
+
       await axios.put("/api/dashboard/config", finalFormData);
-      addToast({ title: "Éxito", description: "Tu perfil ha sido actualizado.", color: "success" });
+      addToast({
+        title: "Éxito",
+        description: "Tu perfil ha sido actualizado.",
+        color: "success",
+      });
       fetchVendedorData(); // Re-sincronizar datos por si acaso
     } catch (error) {
-      addToast({ title: "Error", description: "No se pudieron guardar los cambios.", color: "danger" });
+      addToast({
+        title: "Error",
+        description: "No se pudieron guardar los cambios.",
+        color: "danger",
+      });
     } finally {
       setIsSaving(false);
       setPreviewsToUpload([]);
@@ -350,12 +400,12 @@ export default function ConfiguracionVendedorPage() {
     setFormData((prev) =>
       prev
         ? {
-          ...prev,
-          redes_sociales: [
-            ...prev.redes_sociales,
-            { nombre: "Instagram", enlace: "", usuario: "" },
-          ],
-        }
+            ...prev,
+            redes_sociales: [
+              ...prev.redes_sociales,
+              { nombre: "Instagram", enlace: "", usuario: "" },
+            ],
+          }
         : null,
     );
   };
@@ -364,9 +414,9 @@ export default function ConfiguracionVendedorPage() {
     setFormData((prev) =>
       prev
         ? {
-          ...prev,
-          redes_sociales: prev.redes_sociales.filter((_, i) => i !== index),
-        }
+            ...prev,
+            redes_sociales: prev.redes_sociales.filter((_, i) => i !== index),
+          }
         : null,
     );
   };
@@ -399,10 +449,23 @@ export default function ConfiguracionVendedorPage() {
   return (
     <>
       {fullScreenImage && (
-        <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-[60]" onClick={() => setFullScreenImage(null)}>
-          <img src={fullScreenImage} alt="Previsualización" className="max-w-[90vw] max-h-[90vh] object-contain" onClick={(e) => e.stopPropagation()} />
-          <button className="absolute top-4 right-4 text-white text-3xl font-bold cursor-pointer" onClick={() => setFullScreenImage(null)}>&times;</button>
-        </div>
+        <button
+          className="fixed inset-0 bg-black/80 flex justify-center items-center z-[60]"
+          onClick={() => setFullScreenImage(null)}
+        >
+          <Image
+            alt="Previsualización"
+            className="max-w-[90vw] max-h-[90vh] object-contain"
+            src={fullScreenImage}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            className="absolute top-4 right-4 text-white text-3xl font-bold cursor-pointer"
+            onClick={() => setFullScreenImage(null)}
+          >
+            &times;
+          </button>
+        </button>
       )}
       <div className="p-4 md:p-8 max-w-6xl mx-auto bg-white text-black">
         <h1 className="text-3xl font-bold mb-8">Configuración de la Bodega</h1>
@@ -573,7 +636,10 @@ export default function ConfiguracionVendedorPage() {
             <legend className="font-semibold px-2">Horario de Atención</legend>
             <div className="space-y-3">
               {formData.horario.map((h, index) => (
-                <div key={h.dia} className="grid grid-cols-4 gap-3 items-center">
+                <div
+                  key={h.dia}
+                  className="grid grid-cols-4 gap-3 items-center"
+                >
                   <span className="font-medium">{h.dia}</span>
                   <Input
                     disabled={!h.abierto}
@@ -611,10 +677,25 @@ export default function ConfiguracionVendedorPage() {
               {/* Imágenes ya guardadas */}
               {formData.imagenes.map((imgUrl, index) => (
                 <div key={imgUrl} className="relative group">
-                  <div onClick={() => handlePreviewClick(imgUrl)} className="cursor-pointer">
-                    <SecureS3Image s3Url={imgUrl} alt={`Imagen ${index + 1}`} className="w-full h-32 object-cover rounded-md" />
-                  </div>
-                  <Button isIconOnly color="danger" size="sm" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100" onPress={() => { handleRemoveImage(imgUrl, index, false); }}>
+                  <button
+                    className="cursor-pointer"
+                    onClick={() => handlePreviewClick(imgUrl)}
+                  >
+                    <SecureS3Image
+                      alt={`Imagen ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-md"
+                      s3Url={imgUrl}
+                    />
+                  </button>
+                  <Button
+                    isIconOnly
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100"
+                    color="danger"
+                    size="sm"
+                    onPress={() => {
+                      handleRemoveImage(imgUrl, index, false);
+                    }}
+                  >
                     <TrashIcon />
                   </Button>
                 </div>
@@ -622,17 +703,43 @@ export default function ConfiguracionVendedorPage() {
               {/* Nuevas previsualizaciones */}
               {previewsToUpload.map((preview, index) => (
                 <div key={preview.previewUrl} className="relative group">
-                  <div onClick={() => setFullScreenImage(preview.previewUrl)} className="cursor-pointer">
-                    <img src={preview.previewUrl} alt={`Previsualización ${index + 1}`} className="w-full h-32 object-cover rounded-md border-2 border-dashed border-blue-400" />
-                  </div>
-                  <Button isIconOnly color="danger" size="sm" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100" onPress={() => { handleRemoveImage(preview.previewUrl, index, true); }}>
+                  <button
+                    className="cursor-pointer"
+                    onClick={() => setFullScreenImage(preview.previewUrl)}
+                  >
+                    <Image
+                      alt={`Previsualización ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-md border-2 border-dashed border-blue-400"
+                      src={preview.previewUrl}
+                    />
+                  </button>
+                  <Button
+                    isIconOnly
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100"
+                    color="danger"
+                    size="sm"
+                    onPress={() => {
+                      handleRemoveImage(preview.previewUrl, index, true);
+                    }}
+                  >
                     <TrashIcon />
                   </Button>
                 </div>
               ))}
-              <label className={`w-full h-32 border-2 border-dashed rounded-md flex items-center justify-center ${isSaving ? 'cursor-not-allowed bg-gray-100' : 'cursor-pointer hover:bg-gray-50'}`}>
-                <span className="text-gray-500">{isSaving ? 'Guardando...' : '+ Añadir'}</span>
-                <input multiple accept="image/*" className="hidden" type="file" onChange={handleImageSelection} disabled={isSaving} />
+              <label
+                className={`w-full h-32 border-2 border-dashed rounded-md flex items-center justify-center ${isSaving ? "cursor-not-allowed bg-gray-100" : "cursor-pointer hover:bg-gray-50"}`}
+              >
+                <span className="text-gray-500">
+                  {isSaving ? "Guardando..." : "+ Añadir"}
+                </span>
+                <input
+                  multiple
+                  accept="image/*"
+                  className="hidden"
+                  disabled={isSaving}
+                  type="file"
+                  onChange={handleImageSelection}
+                />
               </label>
             </div>
           </fieldset>

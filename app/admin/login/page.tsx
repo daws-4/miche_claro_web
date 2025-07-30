@@ -24,7 +24,6 @@ export default function Login() {
       const res = await axios.post("/api/admin/login", { username, password });
 
       if (res.status === 200) {
-        console.log("Login exitoso", res.data);
         router.push("/admin/dashboard");
         addToast({
           title: "Éxito",
@@ -33,8 +32,6 @@ export default function Login() {
         });
       }
     } catch (err) {
-      console.log("Fallo en el login", err);
-
       setError("Credenciales inválidas o error del servidor");
       if (axios.isAxiosError(err) && err.response) {
         if (err.response.status === 401) {

@@ -1,3 +1,5 @@
+import crypto from "crypto";
+
 import { NextResponse, NextRequest } from "next/server";
 import {
   S3Client,
@@ -5,7 +7,6 @@ import {
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import crypto from "crypto";
 
 const generateFileName = (bytes = 32) =>
   crypto.randomBytes(bytes).toString("hex");
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
         Key: fileName,
         ContentType: fileType,
       }),
-      { expiresIn: 60 }
+      { expiresIn: 60 },
     );
 
     return NextResponse.json({
@@ -43,9 +44,10 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("Error generando URL firmada:", error);
+
     return NextResponse.json(
       { success: false, error: "Error al generar la URL de subida." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -58,20 +60,21 @@ export async function DELETE(req: NextRequest) {
     if (!fileKey) {
       return NextResponse.json(
         { success: false, error: "Falta el fileKey." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     await s3.send(
-      new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: fileKey })
+      new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: fileKey }),
     );
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error eliminando objeto de S3:", error);
+
     return NextResponse.json(
       { success: false, error: "Error al eliminar la imagen." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
