@@ -16,7 +16,6 @@ import {
   AdvancedMarker,
   useMap,
 } from "@vis.gl/react-google-maps";
-import Image from "next/image";
 
 import { TrashIcon } from "@/components/icons"; // Asume que tienes un icono de basura
 import { SecureS3Image } from "@/components/SecureS3Image";
@@ -187,16 +186,16 @@ export default function ConfiguracionVendedorPage() {
         setFormData((prev) =>
           prev
             ? {
-              ...prev,
-              ubicacionGoogle: {
-                placeId: place.place_id,
-                nombre: place.name,
-                direccionFormateada: place.formatted_address,
-                enlace: place.url,
-                lat: location.lat(),
-                lng: location.lng(),
-              },
-            }
+                ...prev,
+                ubicacionGoogle: {
+                  placeId: place.place_id,
+                  nombre: place.name,
+                  direccionFormateada: place.formatted_address,
+                  enlace: place.url,
+                  lat: location.lat(),
+                  lng: location.lng(),
+                },
+              }
             : null,
         );
       }
@@ -209,16 +208,16 @@ export default function ConfiguracionVendedorPage() {
       setFormData((prev) =>
         prev
           ? {
-            ...prev,
-            ubicacionGoogle: {
-              placeId: undefined,
-              nombre: undefined,
-              direccionFormateada: undefined,
-              enlace: undefined,
-              lat: e.latLng!.lat(),
-              lng: e.latLng!.lng(),
-            },
-          }
+              ...prev,
+              ubicacionGoogle: {
+                placeId: undefined,
+                nombre: undefined,
+                direccionFormateada: undefined,
+                enlace: undefined,
+                lat: e.latLng!.lat(),
+                lng: e.latLng!.lng(),
+              },
+            }
           : null,
       );
     }
@@ -400,12 +399,12 @@ export default function ConfiguracionVendedorPage() {
     setFormData((prev) =>
       prev
         ? {
-          ...prev,
-          redes_sociales: [
-            ...prev.redes_sociales,
-            { nombre: "Instagram", enlace: "", usuario: "" },
-          ],
-        }
+            ...prev,
+            redes_sociales: [
+              ...prev.redes_sociales,
+              { nombre: "Instagram", enlace: "", usuario: "" },
+            ],
+          }
         : null,
     );
   };
@@ -414,9 +413,9 @@ export default function ConfiguracionVendedorPage() {
     setFormData((prev) =>
       prev
         ? {
-          ...prev,
-          redes_sociales: prev.redes_sociales.filter((_, i) => i !== index),
-        }
+            ...prev,
+            redes_sociales: prev.redes_sociales.filter((_, i) => i !== index),
+          }
         : null,
     );
   };
@@ -453,12 +452,13 @@ export default function ConfiguracionVendedorPage() {
           className="fixed inset-0 bg-black/80 flex justify-center items-center z-[60]"
           onClick={() => setFullScreenImage(null)}
         >
+          <button onClick={(e) => e.stopPropagation()}>
           <img
             alt="Previsualización"
             className="max-w-[90vw] max-h-[90vh] object-contain"
             src={fullScreenImage}
-            onClick={(e) => e.stopPropagation()}
-          />
+            />
+            </button>
           <button
             className="absolute top-4 right-4 text-white text-3xl font-bold cursor-pointer"
             onClick={() => setFullScreenImage(null)}
