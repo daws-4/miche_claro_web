@@ -187,16 +187,16 @@ export default function ConfiguracionVendedorPage() {
         setFormData((prev) =>
           prev
             ? {
-                ...prev,
-                ubicacionGoogle: {
-                  placeId: place.place_id,
-                  nombre: place.name,
-                  direccionFormateada: place.formatted_address,
-                  enlace: place.url,
-                  lat: location.lat(),
-                  lng: location.lng(),
-                },
-              }
+              ...prev,
+              ubicacionGoogle: {
+                placeId: place.place_id,
+                nombre: place.name,
+                direccionFormateada: place.formatted_address,
+                enlace: place.url,
+                lat: location.lat(),
+                lng: location.lng(),
+              },
+            }
             : null,
         );
       }
@@ -209,16 +209,16 @@ export default function ConfiguracionVendedorPage() {
       setFormData((prev) =>
         prev
           ? {
-              ...prev,
-              ubicacionGoogle: {
-                placeId: undefined,
-                nombre: undefined,
-                direccionFormateada: undefined,
-                enlace: undefined,
-                lat: e.latLng!.lat(),
-                lng: e.latLng!.lng(),
-              },
-            }
+            ...prev,
+            ubicacionGoogle: {
+              placeId: undefined,
+              nombre: undefined,
+              direccionFormateada: undefined,
+              enlace: undefined,
+              lat: e.latLng!.lat(),
+              lng: e.latLng!.lng(),
+            },
+          }
           : null,
       );
     }
@@ -400,12 +400,12 @@ export default function ConfiguracionVendedorPage() {
     setFormData((prev) =>
       prev
         ? {
-            ...prev,
-            redes_sociales: [
-              ...prev.redes_sociales,
-              { nombre: "Instagram", enlace: "", usuario: "" },
-            ],
-          }
+          ...prev,
+          redes_sociales: [
+            ...prev.redes_sociales,
+            { nombre: "Instagram", enlace: "", usuario: "" },
+          ],
+        }
         : null,
     );
   };
@@ -414,9 +414,9 @@ export default function ConfiguracionVendedorPage() {
     setFormData((prev) =>
       prev
         ? {
-            ...prev,
-            redes_sociales: prev.redes_sociales.filter((_, i) => i !== index),
-          }
+          ...prev,
+          redes_sociales: prev.redes_sociales.filter((_, i) => i !== index),
+        }
         : null,
     );
   };
@@ -453,7 +453,7 @@ export default function ConfiguracionVendedorPage() {
           className="fixed inset-0 bg-black/80 flex justify-center items-center z-[60]"
           onClick={() => setFullScreenImage(null)}
         >
-          <Image
+          <img
             alt="Previsualización"
             className="max-w-[90vw] max-h-[90vh] object-contain"
             src={fullScreenImage}
@@ -707,7 +707,7 @@ export default function ConfiguracionVendedorPage() {
                     className="cursor-pointer"
                     onClick={() => setFullScreenImage(preview.previewUrl)}
                   >
-                    <Image
+                    <img
                       alt={`Previsualización ${index + 1}`}
                       className="w-full h-32 object-cover rounded-md border-2 border-dashed border-blue-400"
                       src={preview.previewUrl}
