@@ -353,7 +353,8 @@ const ProductoFormModal = ({
     }
   };
 
-  const handlePreviewClick = async (s3Url: string) => {
+  const handlePreviewClick = async (s3Url: string, e: React.MouseEvent) => {
+    e.preventDefault()
     try {
       const fileKey = s3Url.split("/").pop();
       const { data } = await axios.post("/api/get-image-url", { fileKey });
@@ -381,7 +382,7 @@ const ProductoFormModal = ({
   return (
     <>
       {fullScreenImage && (
-        <button
+        <span
           className="fixed inset-0 bg-black/80 flex justify-center items-center z-[60]"
           onClick={() => setFullScreenImage(null)}
         >
@@ -398,7 +399,7 @@ const ProductoFormModal = ({
           >
             &times;
           </button>
-        </button>
+        </span>
       )}
 
       <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
@@ -553,7 +554,7 @@ const ProductoFormModal = ({
                   <div key={imgUrl} className="relative group">
                     <button
                       className="cursor-pointer"
-                      onClick={() => handlePreviewClick(imgUrl)}
+                      onClick={(e) => handlePreviewClick(imgUrl, e)}
                     >
                       <SecureS3Image
                         alt={`Imagen ${index + 1}`}

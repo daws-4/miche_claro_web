@@ -213,7 +213,8 @@ const ComboFormModal = ({
     }
   };
 
-  const handlePreviewClick = async (s3Url: string) => {
+  const handlePreviewClick = async (s3Url: string, e: React.MouseEvent) => {
+    e.preventDefault()
     try {
       const fileKey = s3Url.split("/").pop();
       const { data } = await axios.post("/api/get-image-url", { fileKey });
@@ -245,14 +246,14 @@ const ComboFormModal = ({
           className="fixed inset-0 bg-black/80 flex justify-center items-center z-[60]"
           onClick={() => setFullScreenImage(null)}
         >
-            <button onClick={(e) => e.stopPropagation()}>
+            <span onClick={(e) => e.stopPropagation()}>
 
           <img
             alt="Previsualización a tamaño completo"
             className="max-w-[90vw] max-h-[90vh] object-contain"
             src={fullScreenImage}
             />
-            </button>
+            </span>
           <button
             className="absolute top-4 right-4 text-white text-3xl font-bold cursor-pointer"
             onClick={() => setFullScreenImage(null)}
@@ -389,7 +390,7 @@ const ComboFormModal = ({
                   <div key={imgUrl} className="relative group">
                     <button
                       className="cursor-pointer"
-                      onClick={() => handlePreviewClick(imgUrl)}
+                      onClick={(e) => handlePreviewClick(imgUrl, e)}
                     >
                       <SecureS3Image
                         alt={`Imagen ${index + 1}`}
