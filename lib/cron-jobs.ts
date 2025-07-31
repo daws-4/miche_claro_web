@@ -66,7 +66,7 @@ export const iniciarTareasProgramadas = () => {
 
   // Tarea para activar y desactivar ofertas cada minuto.
   cron.schedule(
-    "/1 * * * *",
+    "*/1 * * * *",
     () => {
       // Se ejecutan ambas funciones en el mismo intervalo.
       activarOfertasProgramadas();
