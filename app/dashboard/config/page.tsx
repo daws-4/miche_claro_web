@@ -8,6 +8,7 @@ import {
   SelectItem,
   addToast,
   Switch,
+  Card,
 } from "@heroui/react";
 import axios from "axios";
 import {
@@ -325,7 +326,7 @@ export default function ConfiguracionVendedorPage() {
   };
 
   const handlePreviewClick = async (s3Url: string, e: React.MouseEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     try {
       const fileKey = s3Url.split("/").pop();
       const { data } = await axios.post("/api/get-image-url", { fileKey });
@@ -453,13 +454,13 @@ export default function ConfiguracionVendedorPage() {
           className="fixed inset-0 bg-black/80 flex justify-center items-center z-[60]"
           onClick={() => setFullScreenImage(null)}
         >
-          <span onClick={(e) => e.stopPropagation()}>
-          <img
-            alt="Previsualización"
-            className="max-w-[90vw] max-h-[90vh] object-contain"
-            src={fullScreenImage}
+          <Card onClick={(e) => e.stopPropagation()}>
+            <img
+              alt="Previsualización"
+              className="max-w-[90vw] max-h-[90vh] object-contain"
+              src={fullScreenImage}
             />
-            </span>
+          </Card>
           <button
             className="absolute top-4 right-4 text-white text-3xl font-bold cursor-pointer"
             onClick={() => setFullScreenImage(null)}

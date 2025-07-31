@@ -354,7 +354,7 @@ const ProductoFormModal = ({
   };
 
   const handlePreviewClick = async (s3Url: string, e: React.MouseEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     try {
       const fileKey = s3Url.split("/").pop();
       const { data } = await axios.post("/api/get-image-url", { fileKey });
@@ -382,24 +382,24 @@ const ProductoFormModal = ({
   return (
     <>
       {fullScreenImage && (
-        <span
+        <Card
           className="fixed inset-0 bg-black/80 flex justify-center items-center z-[60]"
           onClick={() => setFullScreenImage(null)}
         >
-            <button onClick={(e) => e.stopPropagation()}>
-          <img
-            alt="Previsualización a tamaño completo"
-            className="max-w-[90vw] max-h-[90vh] object-contain"
-            src={fullScreenImage}
+          <button onClick={(e) => e.stopPropagation()}>
+            <img
+              alt="Previsualización a tamaño completo"
+              className="max-w-[90vw] max-h-[90vh] object-contain"
+              src={fullScreenImage}
             />
-            </button>
+          </button>
           <button
             className="absolute top-4 right-4 text-white text-3xl font-bold cursor-pointer"
             onClick={() => setFullScreenImage(null)}
           >
             &times;
           </button>
-        </span>
+        </Card>
       )}
 
       <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
