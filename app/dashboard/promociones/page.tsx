@@ -155,9 +155,7 @@ const OfertaFormModal: React.FC<OfertaFormModalProps> = ({
       const initialFormState =
         isEditMode && oferta
           ? {
-              ...oferta,
-              fecha_inicio: formatDateTimeForInput(oferta.fecha_inicio),
-              fecha_fin: formatDateTimeForInput(oferta.fecha_fin),
+              ...oferta
             }
           : initialState;
 
