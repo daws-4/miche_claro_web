@@ -104,5 +104,11 @@ const ofertasSchema = new Schema(
     timestamps: true,
   }
 );
+// --- AÑADE ESTOS ÍNDICES AQUÍ ---
+// Índice para la tarea de activación (busca por 'activo' y 'fecha_inicio')
+ofertasSchema.index({ activo: 1, fecha_inicio: 1 });
+
+// Índice para la tarea de desactivación (busca por 'activo' y 'fecha_fin')
+ofertasSchema.index({ activo: 1, fecha_fin: 1 });
 
 export default models.Ofertas || model("Ofertas", ofertasSchema);
