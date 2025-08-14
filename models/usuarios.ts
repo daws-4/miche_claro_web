@@ -1,5 +1,23 @@
 import { Schema, model, models } from "mongoose";
 
+// --- NUEVO SUB-ESQUEMA PARA LAS UBICACIONES ---
+// Define la estructura de una única ubicación guardada.
+const UbicacionSchema = new Schema({
+  nombre: {
+    type: String,
+    required: [true, "El nombre de la ubicación es requerido."],
+    trim: true,
+  },
+  latitud: {
+    type: Number,
+    required: [true, "La latitud es requerida."],
+  },
+  longitud: {
+    type: Number,
+    required: [true, "La longitud es requerida."],
+  },
+});
+
 const usuariosSchema = new Schema(
   {
     nombre: {
@@ -52,10 +70,16 @@ const usuariosSchema = new Schema(
     image: {
       type: String,
     },
+    // --- NUEVO CAMPO AÑADIDO ---
+    // Este es el array que contendrá las ubicaciones del usuario.
+    ubicacionesGuardadas: {
+      type: [UbicacionSchema], // Se define como un array del esquema de ubicación
+      default: [], // Por defecto, el array estará vacío
+    },
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 export default models.Usuarios || model("Usuarios", usuariosSchema);
